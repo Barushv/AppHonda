@@ -7,7 +7,7 @@
   "theme_color": "#e60012",
   "icons": [
     {
-      "src": "img/logo-honda.png",
+      "src": "img/icono-pwa.png",
       "sizes": "512x512",
       "type": "image/png"
     }
