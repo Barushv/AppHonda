@@ -1,0 +1,15 @@
+{
+  "name": "Ficha Honda",
+  "short_name": "Honda Ficha",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e60012",
+  "icons": [
+    {
+      "src": "img/logo-honda.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

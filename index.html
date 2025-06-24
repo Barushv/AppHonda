@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App WebIsrael</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+
+</head>
+
+
+<body>
+  <div id="content">
+    <img src="img/logo-honda.png" alt="Logo Honda" id="logo">
+    <h1>Ficha de Vehículo Honda</h1>
+
+    <!-- Bloque que se ocultará en PDF -->
+    <div id="selector-menu">
+      <label for="modelo">Modelo:</label>
+      <select id="modelo" onchange="cargarVersiones();">
+        <option value="">--Selecciona--</option>
+      </select>
+
+      <label for="version">Versión:</label>
+      <select id="version" onchange="actualizarPrecio();"></select>
+    </div>
+
+    <!-- Información mostrada en PDF -->
+    <div id="info-modelo"></div>
+
+    <div id="imagen-container">
+      <img id="imagen" src="" alt="Imagen del vehículo">
+    </div>
+
+    <div id="asesor">
+      <p><strong>Asesor:</strong> Israel Ortiz</p>
+      <p><strong>Agencia:</strong> Honda Montejo</p>
+      <p><strong>WhatsApp:</strong> 99 93 35 55 14</p>
+      <p><strong>Email:</strong> fortiz.hondamontejo@gmail.com </p>
+    </div>
+
+    <button onclick="generarPDF()">Generar PDF</button>
+  </div>
+
+  <script src="html2pdf.bundle.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(error => console.error('❌ Error al registrar SW:', error));
+    }
+  </script>
+
+</body>
+
+</html>
