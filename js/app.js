@@ -212,12 +212,13 @@ function enviarACliente() {
     return;
   }
   // Generar PDF personalizado
-  generarFichaPDF(
+/*   generarFichaPDF(
     modeloSeleccionado,
     versionSeleccionada,
     precioSeleccionado,
     imagenSeleccionada
-  );
+  ); */
+  
   // Preparar mensaje WhatsApp
   const mensaje = encodeURIComponent(
     `👋 Hola, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.\n\n🚗 Te comparto la ficha del vehículo:\n🔹 Modelo: *${modeloSeleccionado}*\n🔸 Versión: *${versionSeleccionada}*\n💰 Precio: *${precioSeleccionado}*\n\n📞 Si tienes alguna duda o deseas agendar una cita, estoy a tus órdenes para asesorarte.\n\n✉️ Correo: fortiz.hondamontejo@gmail.com\n📘 Facebook: fb.com/honda.israelortiz\n📍 Ubicación: Honda Montejo, Mérida`
@@ -269,3 +270,35 @@ function generarFichaPDF(modelo, version, precio, imagenSrc) {
       document.getElementById("qr-contacto").style.display = "none";
     });
 }
+
+/* document.addEventListener("DOMContentLoaded", () => {
+  const toggleBtn = document.getElementById("toggle-darkmode");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+    });
+  }
+});
+ */
+
+// Guardar el estado del modo oscuro
+function aplicarModoOscuroDesdeStorage() {
+  const darkModeActivo = localStorage.getItem("modoOscuro") === "true";
+  if (darkModeActivo) {
+    document.body.classList.add("dark-mode");
+  }
+}
+
+// Al cargar la página
+document.addEventListener("DOMContentLoaded", () => {
+  aplicarModoOscuroDesdeStorage();
+
+  const toggleBtn = document.getElementById("toggle-darkmode");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      const activo = document.body.classList.contains("dark-mode");
+      localStorage.setItem("modoOscuro", activo);
+    });
+  }
+});
