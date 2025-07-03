@@ -41,7 +41,7 @@ body.dark-mode {
 /* ============================
    BOTÓN MODO OSCURO
 ============================= */
-#toggle-darkmode {
+/* #toggle-darkmode {
   position: fixed;
   top: 10px;
   right: 10px;
@@ -53,6 +53,19 @@ body.dark-mode {
   color: var(--color-white);
   cursor: pointer;
   z-index: 999;
+} */
+
+#toggle-darkmode {
+  font-size: var(--font-sm, 14px);
+  padding: var(--spacing-xs, 6px) var(--spacing-sm, 10px);
+  position: fixed;
+  top: var(--spacing-sm, 10px);
+  right: var(--spacing-sm, 10px);
+  z-index: 1000;
+  border-radius: var(--radius-md, 8px);
+  background-color: var(--color-primario, #2b2b2b);
+  color: var(--color-texto-claro, #ffffff);
+  border: none;
 }
 
 #toggle-darkmode:hover {
@@ -263,7 +276,7 @@ iframe {
   border: none;
   background: none;
   font-size: 14px;
-  color: #ccc;
+  color: #464242;
   transition: background 0.2s ease;
 }
 

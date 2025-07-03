@@ -51,6 +51,14 @@ const precios = {
   },
 };
 
+// =============================
+// VARIABLES GLOBALES SELECCIÓN
+// =============================
+let modeloSeleccionado = "";
+let versionSeleccionada = "";
+let precioSeleccionado = "";
+let imagenSeleccionada = "";
+
 window.onload = () => {
   const selectModelo = document.getElementById("modelo");
   Object.keys(hondaData).forEach((modelo) => {
@@ -93,9 +101,12 @@ function actualizarPrecio() {
   const info = document.getElementById("info-modelo");
 
   if (modelo && version) {
-    info.textContent = `Precio: ${
-      precios[modelo]?.[version] || "Precio no disponible"
-    }`;
+    const precio = precios[modelo]?.[version] || "Precio no disponible";
+    info.textContent = `Precio: ${precio}`;
+    modeloSeleccionado = modelo;
+    versionSeleccionada = version;
+    precioSeleccionado = precio;
+    imagenSeleccionada = document.getElementById("imagen").src;
   } else {
     info.textContent = "";
   }
@@ -196,11 +207,65 @@ function enviarACliente() {
     alert("Ingresa un número válido.");
     return;
   }
-  const mensaje = encodeURIComponent(
-    "Hola, te comparto la ficha del vehículo que seleccionaste. ¡Contáctame si tienes dudas!"
+  if (!modeloSeleccionado || !versionSeleccionada || !precioSeleccionado) {
+    alert("Faltan datos del vehículo seleccionado.");
+    return;
+  }
+  // Generar PDF personalizado
+  generarFichaPDF(
+    modeloSeleccionado,
+    versionSeleccionada,
+    precioSeleccionado,
+    imagenSeleccionada
   );
-  window.open(`https://wa.me/${numero}?text=${mensaje}`, "_blank");
+  // Preparar mensaje WhatsApp
+  const mensaje = encodeURIComponent(
+    `👋 Hola, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.\n\n🚗 Te comparto la ficha del vehículo:\n🔹 Modelo: *${modeloSeleccionado}*\n🔸 Versión: *${versionSeleccionada}*\n💰 Precio: *${precioSeleccionado}*\n\n📞 Si tienes alguna duda o deseas agendar una cita, estoy a tus órdenes para asesorarte.\n\n✉️ Correo: fortiz.hondamontejo@gmail.com\n📘 Facebook: fb.com/honda.israelortiz\n📍 Ubicación: Honda Montejo, Mérida`
+  );
+
+  // Enviar mensaje por WhatsApp con un pequeño delay
+  setTimeout(() => {
+    window.open(`https://wa.me/${numero}?text=${mensaje}`, "_blank");
+  }, 2500);
 }
-document.getElementById("toggle-darkmode").addEventListener("click", () => {
-  document.body.classList.toggle("dark-mode");
-});
+
+function generarFichaPDF(modelo, version, precio, imagenSrc) {
+  document.getElementById("qr-contacto").style.display = "block";
+  document.getElementById("selector-menu").style.display = "none";
+  document.querySelector(".tab-bar").style.display = "none";
+
+  const contenedor = document.createElement("div");
+  contenedor.style.backgroundColor = "#fff";
+  contenedor.style.padding = "20px";
+  contenedor.style.textAlign = "center";
+
+  const titulo = document.createElement("h2");
+  titulo.textContent = modelo;
+  contenedor.appendChild(titulo);
+
+  const datos = document.createElement("p");
+  datos.innerHTML = `<strong>Versión:</strong> ${version}<br><strong>Precio:</strong> ${precio}`;
+  contenedor.appendChild(datos);
+
+  const imagen = new Image();
+  imagen.src = imagenSrc;
+  imagen.alt = `${modelo} ${version}`;
+  imagen.style.maxWidth = "100%";
+  contenedor.appendChild(imagen);
+
+  html2pdf()
+    .set({
+      margin: 10,
+      filename: `${modelo}_${version}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {},
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    })
+    .from(contenedor)
+    .save()
+    .then(() => {
+      document.getElementById("selector-menu").style.display = "block";
+      document.querySelector(".tab-bar").style.display = "flex";
+      document.getElementById("qr-contacto").style.display = "none";
+    });
+}
