@@ -1,3 +1,5 @@
+// app.js
+
 const hondaData = {
   CITY: ["Sport", "Prime", "Touring"],
   CIVIC: ["i-Style", "Sport HEV", "Touring"],
@@ -49,57 +51,69 @@ const precios = {
   },
 };
 
-// Cargar modelos al iniciar
 window.onload = () => {
   const selectModelo = document.getElementById("modelo");
-  for (let modelo in hondaData) {
-    let opt = document.createElement("option");
-    opt.value = modelo;
-    opt.textContent = modelo;
-    selectModelo.appendChild(opt);
-  }
+  Object.keys(hondaData).forEach((modelo) => {
+    const option = document.createElement("option");
+    option.value = modelo;
+    option.textContent = modelo;
+    selectModelo.appendChild(option);
+  });
 };
 
-// Cargar versiones según modelo
 function cargarVersiones() {
   const modelo = document.getElementById("modelo").value;
   const selectVersion = document.getElementById("version");
+
   selectVersion.innerHTML = '<option value="">--Selecciona versión--</option>';
   if (!modelo) return;
 
   hondaData[modelo].forEach((version) => {
-    let opt = document.createElement("option");
-    opt.value = version;
-    opt.textContent = version;
-    selectVersion.appendChild(opt);
+    const option = document.createElement("option");
+    option.value = version;
+    option.textContent = version;
+    selectVersion.appendChild(option);
   });
 
   actualizarImagen(modelo);
+  verificarCargado();
 }
 
-// Mostrar imagen al elegir modelo
 function actualizarImagen(modelo) {
   const imagen = document.getElementById("imagen");
   imagen.src = `img/${modelo.toLowerCase()}.png`;
   imagen.alt = modelo;
+  imagen.onload = verificarCargado;
   document.getElementById("info-modelo").textContent = "";
 }
 
-// Mostrar precio al elegir versión
 function actualizarPrecio() {
   const modelo = document.getElementById("modelo").value;
   const version = document.getElementById("version").value;
   const info = document.getElementById("info-modelo");
 
   if (modelo && version) {
-    const precio = precios[modelo]?.[version] || "Precio no disponible";
-    info.textContent = `Precio: ${precio}`;
+    info.textContent = `Precio: ${
+      precios[modelo]?.[version] || "Precio no disponible"
+    }`;
   } else {
     info.textContent = "";
   }
+
+  verificarCargado();
 }
 
-// Generar PDF
+function verificarCargado() {
+  const modelo = document.getElementById("modelo").value;
+  const version = document.getElementById("version").value;
+  const imagen = document.getElementById("imagen");
+  const boton = document.getElementById("btn-generar");
+
+  const cargado =
+    modelo && version && imagen.complete && imagen.naturalHeight !== 0;
+  boton.disabled = !cargado;
+}
+
 function generarPDF() {
   const modelo = document.getElementById("modelo").value;
   const version = document.getElementById("version").value;
@@ -111,262 +125,82 @@ function generarPDF() {
     return;
   }
 
-  const selectorMenu = document.getElementById("selector-menu");
-  const tabBar = document.querySelector(".tab-bar");
-  const qr = document.getElementById("qr-contacto");
+  document.getElementById("selector-menu").style.display = "none";
+  document.querySelector(".tab-bar").style.display = "none";
+  document.getElementById("qr-contacto").style.display = "block";
 
-  selectorMenu.style.display = "none";
-  tabBar.style.display = "none";
-  qr.style.display = "block";
+  const exportar = () => {
+    const container = document.createElement("div");
+    container.style.backgroundColor = "#fff";
+    container.style.padding = "20px";
+    container.style.textAlign = "center";
 
-  // Esperar que la imagen esté cargada antes de exportar
-  if (!imagen.complete || imagen.naturalHeight === 0) {
-    imagen.onload = () => {
-      exportarPDF();
-    };
-  } else {
-    exportarPDF();
-  }
+    const logo = document.getElementById("logo-vehiculo").cloneNode(true);
+    logo.style.maxWidth = "150px";
+    logo.style.margin = "0 auto 20px";
+    container.appendChild(logo);
 
-  function exportarPDF() {
-    const modelo = document.getElementById("modelo").value;
-    const version = document.getElementById("version").value;
-    const precio = precios[modelo]?.[version] || "Precio no disponible";
-
-    if (!modelo || !version) {
-      alert("Por favor selecciona un modelo y una versión.");
-      return;
-    }
-
-    // Clonar un nuevo contenedor limpio (no modificamos el DOM original)
-    const pdfContainer = document.createElement("div");
-    pdfContainer.style.backgroundColor = "#ffffff";
-    pdfContainer.style.padding = "20px";
-    pdfContainer.style.textAlign = "center";
-    pdfContainer.style.color = "#333";
-    pdfContainer.style.fontFamily =
-      "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
-    // Clonar y centrar el logo
-    const logo =
-      document.getElementById("logo-vehiculo") ||
-      document.getElementById("logo");
-    if (logo) {
-      const logoClone = logo.cloneNode(true);
-      logoClone.style.width = "150px";
-      logoClone.style.margin = "0 auto 20px";
-      logoClone.style.display = "block";
-      pdfContainer.appendChild(logoClone);
-    }
-
-    // Insertar nombre, versión y precio
     const infoBlock = document.createElement("div");
     infoBlock.innerHTML = `
-    <h2 style="margin:0 0 10px;">${modelo}</h2>
-    <p style="margin:5px 0;"><strong>Versión:</strong> ${version}</p>
-    <p style="margin:5px 0 20px;"><strong>Precio:</strong> ${precio}</p>
-  `;
-    pdfContainer.appendChild(infoBlock);
+      <h2>${modelo}</h2>
+      <p><strong>Versión:</strong> ${version}</p>
+      <p><strong>Precio:</strong> ${precio}</p>
+    `;
+    container.appendChild(infoBlock);
 
-    // Clonar y ajustar imagen del vehículo
-    const imgOriginal = document.getElementById("imagen");
-    if (imgOriginal) {
-      const imgClone = document.createElement("img");
-      imgClone.src = imgOriginal.src;
-      imgClone.alt = imgOriginal.alt || modelo;
-      imgClone.style.width = "300px";
-      imgClone.style.maxWidth = "90%";
-      imgClone.style.display = "block";
-      imgClone.style.margin = "0 auto 20px";
-      imgClone.style.opacity = "1";
-      imgClone.style.filter = "none";
-      pdfContainer.appendChild(imgClone);
-    }
+    const imagenClone = new Image();
+    imagenClone.src = imagen.src;
+    imagenClone.alt = imagen.alt;
+    imagenClone.style.maxWidth = "100%";
+    container.appendChild(imagenClone);
 
-    // Agregar QR al final
-    const qrOriginal = document.getElementById("qr-contacto");
-    if (qrOriginal) {
-      const qrClone = qrOriginal.cloneNode(true);
-      qrClone.style.display = "block";
-      qrClone.style.margin = "20px auto 0";
-      pdfContainer.appendChild(qrClone);
-    }
-
-    // Generar PDF
     html2pdf()
       .set({
         margin: 10,
         filename: `${modelo}_${version}.pdf`,
-        image: { type: "jpeg", quality: 1 },
-        html2canvas: { scale: 2, backgroundColor: "#ffffff", useCORS: true },
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {},
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       })
-      .from(pdfContainer)
-      .save();
-  }
-}
-// aqui inicia el codigo para compartir whatsapp
-async function compartirFicha() {
-  const modelo = document.getElementById("modelo").value;
-  const version = document.getElementById("version").value;
-  const precio = precios[modelo]?.[version] || "Precio no disponible";
-
-  if (!modelo || !version) {
-    alert("Selecciona un modelo y una versión primero.");
-    return;
-  }
-
-  // Generar el PDF en memoria como Blob
-  const pdfBlob = await html2pdf()
-    .set({
-      margin: 10,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 2, backgroundColor: "#fff", useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    })
-    .from(document.getElementById("vehiculos"))
-    .outputPdf("blob");
-
-  const file = new File([pdfBlob], `${modelo}_${version}.pdf`, {
-    type: "application/pdf",
-  });
-
-  // Si el navegador soporta compartir archivos…
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: `Ficha Honda ${modelo}`,
-        text: `Te envío la ficha: ${modelo} ${version} – Precio: ${precio}`,
+      .from(container)
+      .save()
+      .then(() => {
+        document.getElementById("selector-menu").style.display = "block";
+        document.querySelector(".tab-bar").style.display = "flex";
+        document.getElementById("qr-contacto").style.display = "none";
       });
-      return;
-    } catch (err) {
-      console.warn("Share API falló:", err);
-    }
-  }
+  };
 
-  // Fallback: abrir WhatsApp Web/Móvil con texto pre-llenado
-  const mensaje = encodeURIComponent(
-    `Hola, te comparto la ficha del Honda ${modelo} ${version} - Precio: ${precio}`
-  );
-  // tu número (incluyendo código país, sin +)
-  const telefono = "529993355514";
-  window.open(`https://wa.me/${telefono}?text=${mensaje}`, "_blank");
+  if (!imagen.complete || imagen.naturalHeight === 0) {
+    imagen.onload = exportar;
+  } else {
+    exportar();
+  }
 }
 
-// Cambiar entre pestañas
 function cambiarTab(tabId) {
-  const secciones = document.querySelectorAll(".tab-section");
-  const botones = document.querySelectorAll(".tab-bar button");
+  document
+    .querySelectorAll(".tab-section")
+    .forEach((sec) => sec.classList.remove("active"));
+  document
+    .querySelectorAll(".tab-bar button")
+    .forEach((btn) => btn.classList.remove("active"));
 
-  secciones.forEach((sec) => sec.classList.remove("active"));
-  botones.forEach((btn) => btn.classList.remove("active"));
-
-  const activa = document.getElementById(tabId);
-  if (activa) activa.classList.add("active");
-
-  const btnActiva = document.getElementById(`tab-${tabId}`);
-  if (btnActiva) btnActiva.classList.add("active");
+  document.getElementById(tabId).classList.add("active");
+  document.getElementById(`tab-${tabId}`).classList.add("active");
 }
 
-async function enviarACliente() {
-  const telEl = document.getElementById("telefono-cliente");
-  const tel = telEl.value.trim();
-  if (!/^\d{10,13}$/.test(tel)) {
-    alert("Ingresa un número válido, ej. 529993355514");
+function enviarACliente() {
+  const numero = document.getElementById("telefono-cliente").value.trim();
+  if (!numero) {
+    alert("Ingresa un número válido.");
     return;
   }
-
-  // 1) Clonar sección de Vehículos y ponerla en DOM (offscreen, pero visible)
-  const orig = document.getElementById("vehiculos");
-  const clone = orig.cloneNode(true);
-  clone.style.position = "fixed";
-  clone.style.top = "-9999px";
-  clone.style.left = "-9999px";
-  clone.classList.add("force-visible"); // opcional para CSS extra
-  document.body.appendChild(clone);
-
-  // 2) Generar PDF de ese clon
-  const modelo = document.getElementById("modelo").value;
-  const version = document.getElementById("version").value;
-  const precio = precios[modelo]?.[version] || "Precio no disponible";
-  const nombrePdf = `Ficha_${modelo}_${version}.pdf`;
-
-  // Forzar que imágenes (PNG) usen crossOrigin si fuese necesario:
-  const imgs = clone.querySelectorAll("img");
-  imgs.forEach((img) => img.setAttribute("crossorigin", "anonymous"));
-
-  const pdfBlob = await html2pdf()
-    .set({
-      margin: 10,
-      filename: nombrePdf,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 2, backgroundColor: "#fff", useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    })
-    .from(clone)
-    .outputPdf("blob");
-
-  // 3) Limpiar el clon
-  document.body.removeChild(clone);
-
-  // 4) Crear los demás archivos igual que antes
-  const vcfText = `BEGIN:VCARD
-VERSION:3.0
-N:Honda Montejo;Israel
-FN:Israel Ortiz
-TEL:+529993355514
-EMAIL:fortiz.hondamontejo@gmail.com
-ORG:Honda Sureste
-TITLE:Asesor de Ventas
-END:VCARD`;
-  const vcfFile = new File(
-    [new Blob([vcfText], { type: "text/vcard" })],
-    "Israel_Ortiz.vcf",
-    { type: "text/vcard" }
+  const mensaje = encodeURIComponent(
+    "Hola, te comparto la ficha del vehículo que seleccionaste. ¡Contáctame si tienes dudas!"
   );
-
-  // Foto: asegúrate de que en img/asesor.jpg
-  const fotoResp = await fetch("img/asesor.jpg");
-  const fotoBlob = await fotoResp.blob();
-  const fotoFile = new File([fotoBlob], "Israel_Ortiz.jpg", {
-    type: fotoBlob.type,
-  });
-
-  // 5) Compartir con Web Share API o fallback
-  const mensajeTexto =
-    `Hola, te envío la ficha del Honda ${modelo} ${version} (Precio: ${precio}).\n\n` +
-    `Aquí mis datos:\nIsrael Ortiz · Asesor de Ventas · Honda Montejo\n` +
-    `Tel: +52 999 335 5514\nEmail: fortiz.hondamontejo@gmail.com`;
-
-  if (
-    navigator.canShare &&
-    navigator.canShare({
-      files: [new File([pdfBlob], nombrePdf), vcfFile, fotoFile],
-    })
-  ) {
-    try {
-      await navigator.share({
-        title: `Ficha Honda ${modelo} ${version}`,
-        text: mensajeTexto,
-        files: [new File([pdfBlob], nombrePdf), vcfFile, fotoFile],
-      });
-      return;
-    } catch (e) {
-      console.warn("Share API error:", e);
-    }
-  }
-
-  // 6) Fallback a WhatsApp Web/Móvil (solo texto)
-  window.open(
-    `https://wa.me/${tel}?text=${encodeURIComponent(mensajeTexto)}`,
-    "_blank"
-  );
+  window.open(`https://wa.me/${numero}?text=${mensaje}`, "_blank");
 }
-
-function mostrarAbout() {
-  document.getElementById("modal-about").classList.remove("hidden");
-}
-function cerrarAbout() {
-  document.getElementById("modal-about").classList.add("hidden");
-}
+document.getElementById("toggle-darkmode").addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+});

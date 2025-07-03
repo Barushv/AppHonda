@@ -1,0 +1,314 @@
+/* ============================
+   TOKENS / VARIABLES CSS
+============================= */
+:root {
+  --color-primary: #e60012; /* Rojo Honda */
+  --color-secondary: #007aff; /* Azul para elementos activos */
+  --color-accent: #ff0000; /* Rojo para botones principales */
+  --color-success: #128c7e; /* Verde WhatsApp */
+  --color-success-dark: #075e54; /* Verde más oscuro para hover */
+  --color-text: #333; /* Texto general */
+  --color-bg: #f9f9f9; /* Fondo claro */
+  --color-white: #ffffff; /* Blanco general */
+  --color-border: #ccc; /* Bordes suaves */
+
+  --font-main: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+  --radius-base: 10px; /* Bordes redondeados */
+  --transition-fast: 0.3s ease; /* Transiciones */
+  --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  --shadow-hover: 0 -2px 8px rgba(0, 0, 0, 0.05); /* Sombra hover */
+}
+
+/* ============================
+   MODO OSCURO (CLASE .dark-mode)
+============================= */
+body.dark-mode {
+  --color-primary: #ff5b5b;
+  --color-secondary: #66b2ff;
+  --color-accent: #ff3b3b;
+  --color-success: #3ecf8e;
+  --color-success-dark: #2ba173;
+  --color-text: #f1f1f1;
+  --color-bg: #1a1a1a;
+  --color-white: #2b2b2b;
+  --color-border: #444;
+
+  --shadow-soft: 0 2px 6px rgba(255, 255, 255, 0.05);
+  --shadow-hover: 0 -2px 8px rgba(255, 255, 255, 0.1);
+}
+
+/* ============================
+   BOTÓN MODO OSCURO
+============================= */
+#toggle-darkmode {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: var(--radius-base);
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+  cursor: pointer;
+  z-index: 999;
+}
+
+#toggle-darkmode:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* ============================
+   ESTRUCTURA GENERAL Y BODY
+============================= */
+body {
+  margin: 0;
+  font-family: var(--font-main);
+  padding-bottom: 70px;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ============================
+   ENCABEZADO (HEADER)
+============================= */
+.app-header {
+  padding: 16px;
+  text-align: center;
+  background-color: var(--color-white);
+  box-shadow: var(--shadow-soft);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--color-primary);
+}
+
+/* ============================
+   TÍTULOS DE SECCIONES
+============================= */
+.tab-section h2 {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 22px;
+}
+
+/* ============================
+   LOGO PRINCIPAL VEHÍCULO
+============================= */
+#logo-vehiculo {
+  width: 100%;
+  max-width: 350px;
+  display: block;
+  margin: 20px auto 0;
+  height: auto;
+}
+
+.section-logo {
+  width: 100%;
+  max-width: 350px;
+  display: block;
+  margin: 20px auto;
+}
+
+/* ============================
+   SELECTORES DE VEHÍCULOS
+============================= */
+#selector-menu {
+  text-align: center;
+  margin: 15px 0;
+}
+
+select {
+  padding: 12px;
+  margin: 8px;
+  font-size: 16px;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border);
+  outline: none;
+}
+
+select:focus {
+  border-color: var(--color-secondary);
+}
+
+/* ============================
+   BOTONES PRINCIPALES
+============================= */
+.btn-action {
+  display: block;
+  width: 80%;
+  max-width: 260px;
+  margin: 10px auto;
+  padding: 14px 0;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: var(--radius-base);
+  border: none;
+  cursor: pointer;
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  transition: background-color var(--transition-fast), transform 0.2s ease;
+}
+
+.btn-action:hover {
+  background-color: var(--color-secondary);
+  transform: scale(1.03);
+}
+
+#btn-enviar {
+  background-color: var(--color-success);
+}
+
+#btn-enviar:hover {
+  background-color: var(--color-success-dark);
+}
+
+/* ============================
+   IMAGEN VEHÍCULO Y PRECIO
+============================= */
+#imagen {
+  max-width: 100%;
+  width: 800px;
+  display: block;
+  margin: 0 auto;
+}
+
+#info-modelo {
+  text-align: center;
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* ============================
+   QR CONTACTO
+============================= */
+#qr-contacto {
+  display: none;
+  text-align: center;
+  margin: 20px;
+}
+
+#qr-contacto img {
+  width: 120px;
+}
+
+/* ============================
+   IFRAMES DE PDFS
+============================= */
+iframe {
+  width: 100%;
+  height: 85vh;
+  border: none;
+}
+
+/* ============================
+   TABLA DE GUARDIAS
+============================= */
+.guardias-img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+}
+
+#guardias {
+  padding: 16px;
+}
+
+/* ============================
+   FORMULARIO ENVIAR WHATSAPP
+============================= */
+#enviar label,
+#enviar input {
+  display: block;
+  width: 80%;
+  max-width: 300px;
+  margin: 10px auto;
+  font-size: 16px;
+}
+
+#enviar input {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+/* ============================
+   NAVEGACIÓN INFERIOR (TAB BAR)
+============================= */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: var(--color-white);
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #ddd;
+  z-index: 999;
+  box-shadow: var(--shadow-hover);
+  flex-wrap: wrap;
+}
+
+.tab-bar button {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #ccc;
+  transition: background 0.2s ease;
+}
+
+.tab-bar button.active {
+  background-color: #e6f0ff;
+  font-weight: bold;
+  color: var(--color-secondary);
+  border-top: 2px solid var(--color-secondary);
+}
+
+.tab-bar button:hover {
+  background-color: #f2f2f2;
+}
+
+/* ============================
+   SECCIONES DINÁMICAS DE LA APP
+============================= */
+.tab-section {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+  padding-bottom: 80px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.tab-section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+#creditos {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+#creditos p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: var(--color-texto, #333); /* por si usas token */
+}

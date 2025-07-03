@@ -1,23 +1,53 @@
-const CACHE_NAME = "honda-cache-v1";
+// =====================================
+// SERVICE WORKER - CACHE DE PWA
+// =====================================
+
+const CACHE_NAME = "honda-app-cache-v1";
 const urlsToCache = [
   "index.html",
   "styles.css",
   "app.js",
-  "html2pdf.bundle.min.js",
+  "html2pdf.bundle.js",
   "img/logo-honda.png",
-  // Agrega aquí todas las imágenes de autos que uses
+  "img/icono-pwa.png",
+  // Agrega aquí tus imágenes de autos si lo deseas precargar
 ];
 
-self.addEventListener("install", event => {
+// =============================
+// INSTALACIÓN DEL SW
+// =============================
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
   );
 });
 
-self.addEventListener("fetch", event => {
+// =============================
+// ACTIVACIÓN DEL SW (LIMPIAR CACHES VIEJOS)
+// =============================
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+});
+
+// =============================
+// INTERCEPCIÓN DE FETCH - OFFLINE
+// =============================
+self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
   );
 });
