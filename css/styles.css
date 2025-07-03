@@ -348,7 +348,8 @@ body.dark-mode {
   background-color: var(--color-white);
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-soft);
-  max-width: 600px;
+  max-width: 100%;
+  width: 90%;
   margin: 2rem auto;
 }
 
@@ -373,7 +374,8 @@ body.dark-mode {
 }
 
 .logo-creditos {
-  width: 80px;
+  width: 100%;
+  max-width: 400px;
   margin-bottom: 1rem;
 }
 
@@ -386,8 +388,8 @@ body.dark-mode {
 #logo-creditos {
   display: block;
   margin: 2rem auto 1rem;
-  width: 100%;
-  max-width: 280px;
+  width: 60%;
+  max-width: 400px;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
