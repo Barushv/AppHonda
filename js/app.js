@@ -260,3 +260,38 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// Funciones de actualización
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").then((registration) => {
+      registration.onupdatefound = () => {
+        const newWorker = registration.installing;
+        newWorker.onstatechange = () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            mostrarBannerActualizacion(); // Mostrar mensaje de actualización
+          }
+        };
+      };
+    });
+  });
+}
+
+// Funciones de actualización
+function mostrarBannerActualizacion() {
+  const banner = document.getElementById("banner-actualizacion");
+  if (banner) banner.style.display = "block";
+}
+
+function actualizarApp() {
+  navigator.serviceWorker.getRegistration().then((reg) => {
+    if (reg.waiting) {
+      reg.waiting.postMessage("SKIP_WAITING");
+    }
+  });
+
+  setTimeout(() => {
+    window.location.reload();
+  }, 800);
+}
