@@ -259,10 +259,15 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("modoOscuro", activo);
     });
   }
+
+  // Botón de actualización manual
+  const btnActualizar = document.getElementById("btn-actualizar");
+  if (btnActualizar) {
+    btnActualizar.addEventListener("click", actualizarApp);
+  }
 });
 
 // Funciones de actualización
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("service-worker.js").then((registration) => {
@@ -270,7 +275,7 @@ if ("serviceWorker" in navigator) {
         const newWorker = registration.installing;
         newWorker.onstatechange = () => {
           if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            mostrarBannerActualizacion(); // Mostrar mensaje de actualización
+            mostrarBotonActualizacion(); // Mostramos solo el botón
           }
         };
       };
@@ -294,4 +299,9 @@ function actualizarApp() {
   setTimeout(() => {
     window.location.reload();
   }, 800);
+}
+
+function mostrarBotonActualizacion() {
+  const boton = document.getElementById("btn-actualizar");
+  if (boton) boton.style.display = "inline-block";
 }

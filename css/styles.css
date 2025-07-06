@@ -394,3 +394,31 @@ body.dark-mode {
   object-fit: contain;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
 }
+
+.btn-refresh {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px auto;
+  display: block;
+}
+
+.btn-refresh:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+.btn-refresh:active {
+  transform: scale(0.98);
+}
+#btn-actualizar {
+  display: none;
+}
