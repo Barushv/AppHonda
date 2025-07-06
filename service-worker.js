@@ -10,6 +10,9 @@ const urlsToCache = [
   "html2pdf.bundle.js",
   "img/logo-honda.png",
   "img/icono-pwa.png",
+  "pdf/oferta.pdf",
+  "pdf/descuentos.pdf",
+  "pdf/guardias.pdf",
   // Agrega aquí tus imágenes de autos si lo deseas precargar
 ];
 
@@ -45,9 +48,38 @@ self.addEventListener("activate", (event) => {
 // INTERCEPCIÓN DE FETCH - OFFLINE
 // =============================
 self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
-  );
+  if (event.request.url.endsWith(".pdf")) {
+    // Para PDFs, intenta primero obtener la versión nueva del servidor
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Actualiza la caché con la nueva versión
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Si falla la red, usa la versión cacheada
+          return caches.match(event.request);
+        })
+    );
+  } else {
+    // Para todo lo demás, usa caché primero
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
+    );
+  }
+});
+
+// =============================
+// ESCUCHA MENSAJES PARA ACTUALIZACIÓN
+// =============================
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
