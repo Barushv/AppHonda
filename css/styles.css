@@ -255,40 +255,51 @@ iframe {
 }
 
 /* ============================
-   NAVEGACIÓN INFERIOR (TAB BAR)
+   NUEVO MENÚ INFERIOR CON ÍCONOS
 ============================= */
 .tab-bar {
   position: fixed;
   bottom: 0;
-  width: 100%;
+  left: 0;
+  right: 0;
   background: var(--color-white);
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: space-around;
-  border-top: 1px solid #ddd;
-  z-index: 999;
-  box-shadow: var(--shadow-hover);
-  flex-wrap: wrap;
+  align-items: center;
+  padding: 4px 0;
+  z-index: 1000;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .tab-bar button {
-  flex: 1;
-  padding: 12px 0;
-  border: none;
   background: none;
-  font-size: 14px;
-  color: #464242;
-  transition: background 0.2s ease;
+  border: none;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--color-text);
+  flex: 1;
+  padding: 4px 0;
+  transition: color 0.3s ease;
 }
 
 .tab-bar button.active {
-  background-color: #e6f0ff;
-  font-weight: bold;
-  color: var(--color-secondary);
-  border-top: 2px solid var(--color-secondary);
+  color: var(--color-primary);
 }
 
-.tab-bar button:hover {
-  background-color: #f2f2f2;
+.tab-bar img {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 2px;
+  transition: transform 0.2s ease;
+}
+
+.tab-bar button:active img {
+  transform: scale(1.1);
 }
 
 /* ============================

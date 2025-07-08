@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="icon" href="img/app-icon.png" />
+  <!-- Precarga las imagenes de los autos -->
   <link rel="apple-touch-icon" href="img/app-icon.png" />
   <link rel="preload" as="image" href="img/city.png" />
   <link rel="preload" as="image" href="img/civic.png" />
@@ -17,6 +18,14 @@
   <link rel="preload" as="image" href="img/crv.png" />
   <link rel="preload" as="image" href="img/pilot.png" />
   <link rel="preload" as="image" href="img/odyssey.png" />
+  <!-- Precarga los íconos del menú -->
+  <link rel="preload" as="image" href="icons/vehiculo.svg" />
+  <link rel="preload" as="image" href="icons/cliente.svg" />
+  <link rel="preload" as="image" href="icons/banco.svg" />
+  <link rel="preload" as="image" href="icons/bonos.svg" />
+  <link rel="preload" as="image" href="icons/guardias.svg" />
+  <link rel="preload" as="image" href="icons/creditos.svg" />
+
 </head>
 
 <body>
@@ -99,13 +108,32 @@
     </main>
 
     <nav class="tab-bar">
-      <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">🚘 Vehículos</button>
-      <button onclick="cambiarTab('enviar')" id="tab-enviar">✉️ Cliente</button>
-      <button onclick="cambiarTab('oferta')" id="tab-oferta">📄 Banco</button>
-      <button onclick="cambiarTab('incentivos')" id="tab-incentivos">💸 Bonos</button>
-      <button onclick="cambiarTab('guardias')" id="tab-guardias">📆 Guardias</button>
-      <button onclick="cambiarTab('creditos')" id="tab-creditos">ℹ️ Créditos</button>
+      <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">
+        <img src="icons/vehiculo.svg" alt="Vehículos" />
+        <span>Vehículos</span>
+      </button>
+      <button onclick="cambiarTab('enviar')" id="tab-enviar">
+        <img src="icons/cliente.svg" alt="Cliente" />
+        <span>Cliente</span>
+      </button>
+      <button onclick="cambiarTab('oferta')" id="tab-oferta">
+        <img src="icons/banco.svg" alt="Banco" />
+        <span>Banco</span>
+      </button>
+      <button onclick="cambiarTab('incentivos')" id="tab-incentivos">
+        <img src="icons/bonos.svg" alt="Bonos" />
+        <span>Bonos</span>
+      </button>
+      <button onclick="cambiarTab('guardias')" id="tab-guardias">
+        <img src="icons/guardias.svg" alt="Guardias" />
+        <span>Guardias</span>
+      </button>
+      <button onclick="cambiarTab('creditos')" id="tab-creditos">
+        <img src="icons/creditos.svg" alt="Créditos" />
+        <span>Créditos</span>
+      </button>
     </nav>
+
   </div>
 
   <script src="js/html2pdf.bundle.js"></script>
