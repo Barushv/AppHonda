@@ -1,107 +1,115 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HondaGo</title>
-    <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css" />
-    <link rel="icon" href="img/app-icon.png" />
-    <link rel="apple-touch-icon" href="img/app-icon.png" />
-    <link rel="preload" as="image" href="img/city.png" />
-    <link rel="preload" as="image" href="img/civic.png" />
-    <link rel="preload" as="image" href="img/accord.png" />
-    <link rel="preload" as="image" href="img/brv.png" />
-    <link rel="preload" as="image" href="img/hrv.png" />
-    <link rel="preload" as="image" href="img/crv.png" />
-    <link rel="preload" as="image" href="img/pilot.png" />
-    <link rel="preload" as="image" href="img/odyssey.png" />
-  </head>
 
-  <body>
-    <div class="app-container">
-      <header class="app-header">
-        <h1>HondaGo</h1>
-      </header>
-      <button id="toggle-darkmode">🌙</button>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HondaGo</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="img/app-icon.png" />
+  <link rel="apple-touch-icon" href="img/app-icon.png" />
+  <link rel="preload" as="image" href="img/city.png" />
+  <link rel="preload" as="image" href="img/civic.png" />
+  <link rel="preload" as="image" href="img/accord.png" />
+  <link rel="preload" as="image" href="img/brv.png" />
+  <link rel="preload" as="image" href="img/hrv.png" />
+  <link rel="preload" as="image" href="img/crv.png" />
+  <link rel="preload" as="image" href="img/pilot.png" />
+  <link rel="preload" as="image" href="img/odyssey.png" />
+</head>
 
-      <main class="main-content">
-        <!-- Vehículos -->
-        <section id="vehiculos" class="tab-section active">
-          <img src="img/logo-honda.png" alt="Logo Honda" id="logo-vehiculo" />
-          <h2>Selecciona tu vehículo</h2>
-          <div id="selector-menu">
-            <select id="modelo" onchange="cargarVersiones()">
-              <option value="">--Selecciona modelo--</option>
-            </select>
-            <select id="version" onchange="actualizarPrecio()">
-              <option value="">--Selecciona versión--</option>
-            </select>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>HondaGo</h1>
+    </header>
+    <button id="toggle-darkmode">🌙</button>
+
+    <main class="main-content">
+      <!-- Vehículos -->
+      <section id="vehiculos" class="tab-section active">
+        <img src="img/logo-honda.png" alt="Logo Honda" id="logo-vehiculo" />
+        <h2>Selecciona tu vehículo</h2>
+        <div id="selector-menu">
+          <select id="modelo" onchange="cargarVersiones()">
+            <option value="">--Selecciona modelo--</option>
+          </select>
+          <select id="version" onchange="actualizarPrecio()">
+            <option value="">--Selecciona versión--</option>
+          </select>
+        </div>
+        <img id="imagen" src="" alt="Vehículo" />
+        <div id="info-modelo"></div>
+        <button id="btn-generar" class="btn-action" onclick="generarPDF()" disabled>Generar PDF</button>
+
+        <div id="qr-contacto" style="display: none">
+          <p><strong>Escanéame para guardarme como contacto:</strong></p>
+          <img src="img/qr_vcard.png" alt="QR vCard" />
+        </div>
+      </section>
+
+      <!-- Oferta mensual -->
+      <section id="oferta" class="tab-section">
+        <h2>Oferta comercial del mes</h2>
+        <iframe src="pdf/oferta.pdf" width="100%" height="600px" style="border: none" loading="lazy"> </iframe>
+      </section>
+
+      <!-- Incentivos -->
+      <section id="incentivos" class="tab-section">
+        <h2>Incentivos y descuentos</h2>
+        <iframe src="pdf/descuentos.pdf" width="100%" height="600px" style="border: none" loading="lazy"> </iframe>
+      </section>
+
+      <!-- Guardias -->
+      <section id="guardias" class="tab-section">
+        <h2>Mis guardias</h2>
+        <img src="img/guardias.png" alt="Guardias" class="guardias-img" />
+      </section>
+
+      <!-- Contacto con Cliente -->
+      <section id="enviar" class="tab-section">
+        <img src="img/logo-honda.png" alt="Logo Honda" class="section-logo" />
+        <h2>Enviar a Cliente</h2>
+        <label for="telefono-cliente">Número WhatsApp:</label>
+        <input type="tel" id="telefono-cliente" placeholder="52XXXXXXXXXX" />
+        <button class="btn-action" id="btn-enviar" onclick="enviarACliente()">🚀 Enviar WhatsApp</button>
+      </section>
+
+      <!-- Créditos -->
+      <section id="creditos" class="tab-section">
+        <div class="creditos-container">
+          <img src="img/logo-honda.png" alt="Honda Logo" class="logo-creditos" />
+          <h2>Créditos</h2>
+          <p><strong>Desarrollado por:</strong> Israel Ortiz</p>
+          <p><strong>Versión:</strong> 1.1 · 2025</p>
+          <p><strong>Correo:</strong> fortiz.hondamontejo@gmail.com</p>
+          <p><strong>Facebook:</strong> <a href="https://fb.com/honda.israelortiz"
+              target="_blank">fb.com/honda.israelortiz</a></p>
+          <p class="footer-copy">© HondaGo· Todos los derechos reservados</p>
+          <!-- Botón de actualización -->
+          <div id="actualizacion-info" style="display: none;">
+            <p>🔄 <strong>Nueva versión disponible</strong></p>
+            <ul id="lista-cambios"></ul>
+            <button id="btn-actualizar">Actualizar ahora</button>
           </div>
-          <img id="imagen" src="" alt="Vehículo" />
-          <div id="info-modelo"></div>
-          <button id="btn-generar" class="btn-action" onclick="generarPDF()" disabled>Generar PDF</button>
+        </div>
 
-          <div id="qr-contacto" style="display: none">
-            <p><strong>Escanéame para guardarme como contacto:</strong></p>
-            <img src="img/qr_vcard.png" alt="QR vCard" />
-          </div>
-        </section>
+      </section>
+    </main>
 
-        <!-- Oferta mensual -->
-        <section id="oferta" class="tab-section">
-          <h2>Oferta comercial del mes</h2>
-          <iframe src="pdf/oferta.pdf" width="100%" height="600px" style="border: none" loading="lazy"> </iframe>
-        </section>
+    <nav class="tab-bar">
+      <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">🚘 Vehículos</button>
+      <button onclick="cambiarTab('enviar')" id="tab-enviar">✉️ Cliente</button>
+      <button onclick="cambiarTab('oferta')" id="tab-oferta">📄 Banco</button>
+      <button onclick="cambiarTab('incentivos')" id="tab-incentivos">💸 Bonos</button>
+      <button onclick="cambiarTab('guardias')" id="tab-guardias">📆 Guardias</button>
+      <button onclick="cambiarTab('creditos')" id="tab-creditos">ℹ️ Créditos</button>
+    </nav>
+  </div>
 
-        <!-- Incentivos -->
-        <section id="incentivos" class="tab-section">
-          <h2>Incentivos y descuentos</h2>
-          <iframe src="pdf/descuentos.pdf" width="100%" height="600px" style="border: none" loading="lazy"> </iframe>
-        </section>
+  <script src="js/html2pdf.bundle.js"></script>
+  <script src="js/app.js"></script>
+</body>
 
-        <!-- Guardias -->
-        <section id="guardias" class="tab-section">
-          <h2>Mis guardias</h2>
-          <img src="img/guardias.png" alt="Guardias" class="guardias-img" />
-        </section>
-
-        <!-- Contacto con Cliente -->
-        <section id="enviar" class="tab-section">
-          <img src="img/logo-honda.png" alt="Logo Honda" class="section-logo" />
-          <h2>Enviar a Cliente</h2>
-          <label for="telefono-cliente">Número WhatsApp:</label>
-          <input type="tel" id="telefono-cliente" placeholder="52XXXXXXXXXX" />
-          <button class="btn-action" id="btn-enviar" onclick="enviarACliente()">🚀 Enviar WhatsApp</button>
-        </section>
-
-        <!-- Créditos -->
-        <section id="creditos" class="tab-section">
-          <div class="creditos-container">
-            <img src="img/logo-honda.png" alt="Honda Logo" class="logo-creditos" />
-            <h2>Créditos</h2>
-            <p><strong>Desarrollado por:</strong> Israel Ortiz</p>
-            <p><strong>Versión:</strong> 1.1 · 2025</p>
-            <p><strong>Correo:</strong> fortiz.hondamontejo@gmail.com</p>
-            <p><strong>Facebook:</strong> <a href="https://fb.com/honda.israelortiz" target="_blank">fb.com/honda.israelortiz</a></p>
-            <p class="footer-copy">© HondaGo· Todos los derechos reservados</p>
-            <!-- Botón de actualización -->
-            <button id="btn-actualizar" class="btn-refresh">🔄 Actualizar app</button>
-          </div>
-        </section>
-      </main>
-
-      <nav class="tab-bar">
-        <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">🚘 Vehículos</button>
-        <button onclick="cambiarTab('enviar')" id="tab-enviar">✉️ Cliente</button>
-        <button onclick="cambiarTab('oferta')" id="tab-oferta">📄 Banco</button>
-        <button onclick="cambiarTab('incentivos')" id="tab-incentivos">💸 Bonos</button>
-        <button onclick="cambiarTab('guardias')" id="tab-guardias">📆 Guardias</button>
-        <button onclick="cambiarTab('creditos')" id="tab-creditos">ℹ️ Créditos</button>
-      </nav>
-    </div>
-
-    <script src="js/html2pdf.bundle.js"></script>
-    <script src="js/app.js"></script>
-  </body>
 </html>

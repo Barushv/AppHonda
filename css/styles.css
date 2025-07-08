@@ -419,6 +419,35 @@ body.dark-mode {
 .btn-refresh:active {
   transform: scale(0.98);
 }
+#actualizacion-info {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  padding: 12px;
+  margin: 20px auto;
+  border-radius: 8px;
+  max-width: 90%;
+  text-align: center;
+}
+
+#actualizacion-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+#actualizacion-info li::before {
+  content: "✔️ ";
+  margin-right: 5px;
+}
+
 #btn-actualizar {
-  display: none;
+  background-color: #007bff;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  margin-top: 10px;
+  cursor: pointer;
 }

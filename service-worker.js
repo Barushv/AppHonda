@@ -13,6 +13,8 @@ const urlsToCache = [
   "pdf/oferta.pdf",
   "pdf/descuentos.pdf",
   "pdf/guardias.pdf",
+  "json/precios.json",
+
   // Agrega aquí tus imágenes de autos si lo deseas precargar
 ];
 

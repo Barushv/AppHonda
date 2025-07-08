@@ -11,59 +11,29 @@ const hondaData = {
   ODYSSEY: ["Touring", "Black Edition"],
 };
 
-const precios = {
-  CITY: {
-    Sport: "$405,900.00",
-    Prime: "$437,900.00",
-    Touring: "$468,900.00",
-  },
-  CIVIC: {
-    "i-Style": "$590,900.00",
-    "Sport HEV": "$694,900.00",
-    Touring: "$734,900.00",
-  },
-  ACCORD: {
-    Prime: "$775,900.00",
-    Touring: "$915,900.00",
-  },
-  BRV: {
-    Uniq: "$488,900.00",
-    Touring: "$529,900.00",
-  },
-  HRV: {
-    Uniq: "$610,900.00",
-    Sport: "$650,900.00",
-    Touring: "$680,900.00",
-  },
-  CRV: {
-    Turbo: "$748,900.00",
-    "Turbo Plus": "$804,900.00",
-    Touring: "$858,900.00",
-    "Touring Hev": "$947,900.00",
-  },
-  PILOT: {
-    Touring: "$1,200,900.00",
-    "Black Edition": "$1,230,900.00",
-  },
-  ODYSSEY: {
-    Touring: "$1,182,900.00",
-    "Black Edition": "$1,212,900.00",
-  },
-};
-
 let modeloSeleccionado = "";
 let versionSeleccionada = "";
 let precioSeleccionado = "";
 let imagenSeleccionada = "";
+let precios = {};
 
-window.onload = () => {
+window.onload = async () => {
   const selectModelo = document.getElementById("modelo");
+
   Object.keys(hondaData).forEach((modelo) => {
     const option = document.createElement("option");
     option.value = modelo;
     option.textContent = modelo;
     selectModelo.appendChild(option);
   });
+
+  // Cargar precios desde JSON externo
+  try {
+    const response = await fetch("json/precios.json");
+    precios = await response.json();
+  } catch (error) {
+    console.error("Error cargando precios:", error);
+  }
 };
 
 function cargarVersiones() {
@@ -120,7 +90,8 @@ function verificarCargado() {
   const version = document.getElementById("version").value;
   const imagen = document.getElementById("imagen");
   const boton = document.getElementById("btn-generar");
-  const todoListo = modelo && version && imagen.complete && imagen.naturalHeight !== 0;
+  const todoListo =
+    modelo && version && imagen.complete && imagen.naturalHeight !== 0;
   boton.disabled = !todoListo;
 }
 
@@ -203,8 +174,12 @@ function generarPDF() {
 }
 
 function cambiarTab(tabId) {
-  document.querySelectorAll(".tab-section").forEach((sec) => sec.classList.remove("active"));
-  document.querySelectorAll(".tab-bar button").forEach((btn) => btn.classList.remove("active"));
+  document
+    .querySelectorAll(".tab-section")
+    .forEach((sec) => sec.classList.remove("active"));
+  document
+    .querySelectorAll(".tab-bar button")
+    .forEach((btn) => btn.classList.remove("active"));
 
   document.getElementById(tabId).classList.add("active");
   document.getElementById(`tab-${tabId}`).classList.add("active");
@@ -270,16 +245,21 @@ document.addEventListener("DOMContentLoaded", () => {
 // Funciones de actualización
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").then((registration) => {
-      registration.onupdatefound = () => {
-        const newWorker = registration.installing;
-        newWorker.onstatechange = () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            mostrarBotonActualizacion(); // Mostramos solo el botón
-          }
+    navigator.serviceWorker
+      .register("service-worker.js")
+      .then((registration) => {
+        registration.onupdatefound = () => {
+          const newWorker = registration.installing;
+          newWorker.onstatechange = () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
+              mostrarBotonActualizacion(); // Mostramos solo el botón
+            }
+          };
         };
-      };
-    });
+      });
   });
 }
 
@@ -302,6 +282,18 @@ function actualizarApp() {
 }
 
 function mostrarBotonActualizacion() {
+  const contenedor = document.getElementById("actualizacion-info");
+  const listaCambios = document.getElementById("lista-cambios");
   const boton = document.getElementById("btn-actualizar");
-  if (boton) boton.style.display = "inline-block";
+
+  if (contenedor && listaCambios && boton) {
+    listaCambios.innerHTML = `
+      <li>📄 Precios actualizados (precios.json)</li>
+      <li>📑 Oferta comercial (oferta.pdf)</li>
+      <li>🧾 Bonos y descuentos (descuentos.pdf)</li>
+      <li>📅 Guardias del mes (guardias.pdf)</li>
+    `;
+    contenedor.style.display = "block";
+    boton.style.display = "inline-block";
+  }
 }
