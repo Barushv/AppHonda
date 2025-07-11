@@ -2,7 +2,7 @@
 // SERVICE WORKER - CACHE DE PWA
 // =====================================
 
-const CACHE_NAME = "honda-app-cache-icons";
+const CACHE_NAME = "honda-app-cache-calendario";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
