@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!calendarEl) return;
 
   calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: "es", // <-- Esta línea pone todo en español
     initialView: "dayGridMonth",
     height: "auto",
     headerToolbar: {
