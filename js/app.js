@@ -497,18 +497,32 @@ document.addEventListener("DOMContentLoaded", () => {
 // REGISTRO Y DETECCIÓN DE ACTUALIZACIÓN SW
 // =====================
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").then((registration) => {
-      registration.onupdatefound = () => {
-        const newWorker = registration.installing;
-        newWorker.onstatechange = () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            mostrarBotonActualizacion();
-          }
-        };
-      };
+  // ✅ Ejecutar al cargar el DOM (versionado dinámico para PDFs)
+  window.addEventListener("DOMContentLoaded", () => {
+    const version = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+    document.querySelectorAll("iframe[data-src]").forEach((iframe) => {
+      const src = iframe.getAttribute("data-src");
+      iframe.src = `${src}?v=${version}`;
+      console.log(`PDF actualizado: ${iframe.src}`);
     });
   });
+
+  // ✅ Ejecutar al cargar todo (incluye assets) para registrar SW
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").then((registration) => {
+        registration.onupdatefound = () => {
+          const newWorker = registration.installing;
+          newWorker.onstatechange = () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              mostrarBotonActualizacion();
+            }
+          };
+        };
+      });
+    });
+  }
 
   // Recarga automática cuando el nuevo SW toma control
   let refreshing = false;
