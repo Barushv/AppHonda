@@ -2,7 +2,7 @@
 // SERVICE WORKER - CACHE DE PWA
 // =====================================
 
-const CACHE_NAME = "honda-app-cache-agosto-2";
+const CACHE_NAME = "honda-app-cache-august-2";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
@@ -51,27 +51,24 @@ self.addEventListener("activate", (event) => {
 // =============================
 self.addEventListener("fetch", (event) => {
   if (event.request.url.endsWith(".pdf")) {
-    // Para PDFs, intenta primero obtener la versión nueva del servidor
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Actualiza la caché con la nueva versión
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
+      caches.open(CACHE_NAME).then((cache) => {
+        return fetch(event.request)
+          .then((networkResponse) => {
+            // Guarda nueva versión del PDF en caché
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          })
+          .catch(() => {
+            // Si está offline o falla la red, usa el caché
+            return cache.match(event.request);
           });
-          return response;
-        })
-        .catch(() => {
-          // Si falla la red, usa la versión cacheada
-          return caches.match(event.request);
-        })
+      })
     );
   } else {
-    // Para todo lo demás, usa caché primero
     event.respondWith(
-      caches.match(event.request).then((response) => {
-        return response || fetch(event.request);
+      caches.match(event.request).then((cachedResponse) => {
+        return cachedResponse || fetch(event.request);
       })
     );
   }
