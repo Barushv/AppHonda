@@ -2,7 +2,7 @@
 // SERVICE WORKER - CACHE DE PWA
 // =====================================
 
-const CACHE_NAME = "honda-app-cache-agosto";
+const CACHE_NAME = "honda-app-cache-agosto-1";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
@@ -10,8 +10,6 @@ const urlsToCache = [
   "js/html2pdf.bundle.js",
   "img/logo-honda.png",
   "img/icono-pwa.png",
-  "pdf/oferta.pdf",
-  "pdf/descuentos.pdf",
   "img/guardias.png",
   "json/precios.json",
 
@@ -85,4 +83,5 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+
 
