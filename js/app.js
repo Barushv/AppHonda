@@ -613,3 +613,69 @@ tipoEvento.addEventListener("change", function () {
     document.getElementById("tituloModalGuardia").textContent = "Nuevo Recordatorio";
   }
 });
+
+function mostrarToast(mensaje, tipo = "info") {
+  let icon = "ℹ️";
+  if (tipo === "success") icon = "✅";
+  if (tipo === "error") icon = "❌";
+
+  const toast = document.createElement("div");
+  toast.className = `toast-ux ${tipo}`;
+  toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${mensaje}</span>`;
+  toast.style.position = "fixed";
+  toast.style.bottom = "30px";
+  toast.style.right = "30px";
+  toast.style.background = "#333";
+  toast.style.color = "#fff";
+  toast.style.padding = "10px 20px";
+  toast.style.borderRadius = "8px";
+  toast.style.opacity = 0.9;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = 0;
+    setTimeout(() => toast.remove(), 700);
+  }, 3000);
+}
+
+document.getElementById("btn-buscar-update")?.addEventListener("click", () => {
+  const mensaje = document.getElementById("mensaje-actualizacion");
+  mensaje.textContent = "Buscando actualizaciones...";
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (!reg) {
+        mensaje.textContent = "No hay Service Worker registrado.";
+        return;
+      }
+
+      reg.update().then(() => {
+        if (reg.waiting) {
+          mensaje.innerHTML = `
+              ✅ ¡Nueva versión disponible!<br>
+              <button id="btn-actualizar-ahora">Actualizar ahora</button>
+            `;
+
+          document.getElementById("btn-actualizar-ahora").addEventListener("click", () => {
+            localStorage.setItem("updatePending", "true");
+            reg.waiting.postMessage("SKIP_WAITING");
+          });
+        } else {
+          mensaje.textContent = "✅ Ya estás usando la última versión.";
+          mostrarToast("Ya estás usando la última versión", "success");
+        }
+      });
+    });
+  } else {
+    mensaje.textContent = "⚠️ Tu navegador no soporta Service Workers.";
+  }
+});
+
+// Revisión auto-aplicada al recargar si había pendiente
+window.addEventListener("load", () => {
+  if (localStorage.getItem("updatePending") === "true") {
+    localStorage.removeItem("updatePending");
+    mostrarToast("Actualización aplicada con éxito", "success");
+    setTimeout(() => window.location.reload(), 1000);
+  }
+});
