@@ -1,4 +1,4 @@
-const CACHE_NAME = "honda-app-cache-v4"; // ⚠️ Incrementar en cada deploy
+const CACHE_NAME = "honda-app-cache-v5"; // ⚠️ Incrementar en cada deploy
 
 const urlsToCache = [
   "index.html",
@@ -59,3 +59,4 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data === "SKIP_WAITING") self.skipWaiting();
 });
+
