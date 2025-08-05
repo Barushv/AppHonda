@@ -1,5 +1,8 @@
-const CACHE_NAME = "honda-app-cache-v5"; // ⚠️ Incrementar en cada deploy
+// =====================================
+// SERVICE WORKER - CACHE DE PWA
+// =====================================
 
+const CACHE_NAME = "honda-app-cache-calendario";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
@@ -7,56 +10,78 @@ const urlsToCache = [
   "js/html2pdf.bundle.js",
   "img/logo-honda.png",
   "img/icono-pwa.png",
+  "pdf/oferta.pdf",
+  "pdf/descuentos.pdf",
   "img/guardias.png",
   "json/precios.json",
+
+  // Agrega aquí tus imágenes de autos si lo deseas precargar
 ];
 
-// Precaching
+// =============================
+// INSTALACIÓN DEL SW
+// =============================
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
-});
-
-// Limpiar caché vieja
-self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) return caches.delete(cache);
-        })
-      )
-    )
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
   );
 });
 
-// Manejo de fetch
-self.addEventListener("fetch", (event) => {
-  const url = event.request.url;
+// =============================
+// ACTIVACIÓN DEL SW (LIMPIAR CACHES VIEJOS)
+// =============================
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+});
 
-  if (url.endsWith(".pdf")) {
-    // Siempre intenta desde red primero
+// =============================
+// INTERCEPCIÓN DE FETCH - OFFLINE
+// =============================
+self.addEventListener("fetch", (event) => {
+  if (event.request.url.endsWith(".pdf")) {
+    // Para PDFs, intenta primero obtener la versión nueva del servidor
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return fetch(event.request)
-          .then((response) => {
-            cache.put(event.request, response.clone());
-            return response;
-          })
-          .catch(() => cache.match(event.request));
-      })
+      fetch(event.request)
+        .then((response) => {
+          // Actualiza la caché con la nueva versión
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Si falla la red, usa la versión cacheada
+          return caches.match(event.request);
+        })
     );
   } else {
-    // Para todo lo demás: cache primero
+    // Para todo lo demás, usa caché primero
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request);
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
       })
     );
   }
 });
 
-// Forzar activación del nuevo SW
+// =============================
+// ESCUCHA MENSAJES PARA ACTUALIZACIÓN
+// =============================
 self.addEventListener("message", (event) => {
-  if (event.data === "SKIP_WAITING") self.skipWaiting();
+  if (event.data === "SKIP_WAITING" || event.data?.action === "skipWaiting") {
+    self.skipWaiting();
+  }
 });
-

@@ -1,222 +1,206 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HondaGo</title>
-    <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css" />
-    <link rel="icon" href="img/icono-pwa.png" />
-    <!-- Precarga las imagenes de los autos -->
-    <link rel="apple-touch-icon" href="img/icono-pwa.png" />
-    <link rel="preload" as="image" href="img/city.png" />
-    <link rel="preload" as="image" href="img/civic.png" />
-    <link rel="preload" as="image" href="img/accord.png" />
-    <link rel="preload" as="image" href="img/brv.png" />
-    <link rel="preload" as="image" href="img/hrv.png" />
-    <link rel="preload" as="image" href="img/crv.png" />
-    <link rel="preload" as="image" href="img/pilot.png" />
-    <link rel="preload" as="image" href="img/odyssey.png" />
-    <!-- Precarga los íconos del menú -->
-    <link rel="preload" as="image" href="icons/vehiculo.svg" />
-    <link rel="preload" as="image" href="icons/cliente.svg" />
-    <link rel="preload" as="image" href="icons/banco.svg" />
-    <link rel="preload" as="image" href="icons/bonos.svg" />
-    <link rel="preload" as="image" href="icons/guardias.svg" />
-    <link rel="preload" as="image" href="icons/creditos.svg" />
-    <!-- FullCalendar CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
-  </head>
 
-  <body>
-    <!-- Firebase App (compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <!-- Firestore (compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HondaGo</title>
+  <!-- Manifest para PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <!-- CSS principal -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <!-- Ícono PWA -->
+  <link rel="icon" href="img/icono-pwa.png" />
+  <!-- Precarga imágenes de autos -->
+  <link rel="apple-touch-icon" href="img/icono-pwa.png" />
+  <link rel="preload" as="image" href="img/city.png" />
+  <link rel="preload" as="image" href="img/civic.png" />
+  <link rel="preload" as="image" href="img/accord.png" />
+  <link rel="preload" as="image" href="img/brv.png" />
+  <link rel="preload" as="image" href="img/hrv.png" />
+  <link rel="preload" as="image" href="img/crv.png" />
+  <link rel="preload" as="image" href="img/pilot.png" />
+  <link rel="preload" as="image" href="img/odyssey.png" />
+  <!-- Precarga íconos del menú (puedes sustituir SVGs por otros si lo deseas) -->
+  <link rel="preload" as="image" href="icons/vehiculo.svg" />
+  <link rel="preload" as="image" href="icons/financiamiento.svg" />
+  <link rel="preload" as="image" href="icons/mas.svg" />
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
+  <!-- Google Material Icons (opcional, por si usas estos iconos en botones de "Más") -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+</head>
 
-    <div class="app-container">
-      <header class="app-header">
+<body>
+  <div class="app-container">
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-center">
         <h1>HondaGo</h1>
-      </header>
-      <button id="toggle-darkmode">🌙</button>
+      </div>
+      <button id="toggle-darkmode" class="darkmode-btn" aria-label="Cambiar modo">
+        <span class="material-icons" id="icon-darkmode">dark_mode</span>
+      </button>
+    </header>
 
-      <main class="main-content">
-        <!-- Vehículos -->
-        <section id="vehiculos" class="tab-section active">
-          <img src="img/logo-honda.png" alt="Logo Honda" id="logo-vehiculo" />
-          <h2>Selecciona tu vehículo</h2>
-          <div id="selector-menu">
-            <select id="modelo" onchange="cargarVersiones()">
-              <option value="">--Selecciona modelo--</option>
-            </select>
-            <select id="version" onchange="actualizarPrecio()">
-              <option value="">--Selecciona versión--</option>
-            </select>
-          </div>
-          <img id="imagen" src="" alt="Vehículo" />
-          <div id="info-modelo"></div>
-          <button id="btn-generar" class="btn-action" onclick="generarPDF()" disabled>Generar PDF</button>
 
-          <div id="qr-contacto" style="display: none">
-            <p><strong>Escanéame para guardarme como contacto:</strong></p>
-            <img src="img/qr_vcard.png" alt="QR vCard" />
-          </div>
-        </section>
 
-        <!-- Oferta mensual -->
-        <section id="oferta" class="tab-section">
-          <h2>Oferta comercial del mes</h2>
-          <iframe data-src="pdf/oferta.pdf" width="100%" height="600px" style="border: none" loading="lazy"></iframe>
-        </section>
 
-        <!-- Incentivos -->
-        <section id="incentivos" class="tab-section">
-          <h2>Incentivos y descuentos</h2>
-          <iframe data-src="pdf/descuentos.pdf" width="100%" height="600px" style="border: none" loading="lazy"></iframe>
-        </section>
+    <main class="main-content">
 
-        <!-- Guardias -->
-        <section id="guardias" class="tab-section">
-          <h2>Mis guardias</h2>
-          <div id="calendario-guardias"></div>
-
-          <!-- <img src="img/guardias.png" alt="Guardias" class="guardias-img" /> -->
-        </section>
-
-        <!-- Contacto con Cliente -->
-        <section id="enviar" class="tab-section">
-          <img src="img/logo-honda.png" alt="Logo Honda" class="section-logo" />
-          <h2>Enviar a Cliente</h2>
+      <!-- === SECCIÓN VEHÍCULOS (Cotizador y Envío) === -->
+      <section id="vehiculos" class="tab-section active">
+        <img src="img/logo-honda.png" alt="Logo Honda" id="logo-vehiculo" />
+        <h2>Vehículos</h2>
+        <div id="selector-menu">
+          <select id="modelo" onchange="cargarVersiones()">
+            <option value="">--Selecciona modelo--</option>
+            <!-- Opciones via JS -->
+          </select>
+          <select id="version" onchange="actualizarPrecio()">
+            <option value="">--Selecciona versión--</option>
+            <!-- Opciones via JS -->
+          </select>
+        </div>
+        <img id="imagen" src="" alt="Vehículo" />
+        <div id="info-modelo"></div>
+        <button id="btn-generar" class="btn-action" onclick="generarPDF()" disabled>Generar PDF</button>
+        <!-- QR de contacto oculto -->
+        <div id="qr-contacto" style="display: none">
+          <p><strong>Escanéame para guardarme como contacto:</strong></p>
+          <img src="img/qr_vcard.png" alt="QR vCard" />
+        </div>
+        <!-- Formulario de WhatsApp integrado -->
+        <div id="form-whatsapp">
+          <h3>Enviar ficha al cliente</h3>
           <label for="telefono-cliente">Número WhatsApp:</label>
           <input type="tel" id="telefono-cliente" placeholder="52XXXXXXXXXX" />
           <button class="btn-action" id="btn-enviar" onclick="enviarACliente()">🚀 Enviar WhatsApp</button>
-        </section>
 
-        <!-- Créditos -->
-        <section id="creditos" class="tab-section">
+
+        </div>
+      </section>
+
+      <!-- === SECCIÓN FINANCIAMIENTO === -->
+      <section id="financiamiento" class="tab-section">
+        <h2>Financiamiento</h2>
+        <h3>Oferta comercial del mes</h3>
+        <iframe src="pdf/oferta.pdf" width="100%" height="600px" loading="lazy"></iframe>
+        <h3>Bonos e Incentivos</h3>
+        <iframe src="pdf/descuentos.pdf" width="100%" height="600px" loading="lazy"></iframe>
+      </section>
+
+      <!-- === SECCIÓN MÁS (CALENDARIO, CRÉDITOS, ACTUALIZACIÓN) === -->
+      <section id="mas" class="tab-section">
+        <div class="menu-mas">
+          <!-- Opciones tipo lista o botones grandes, para calendar, créditos y actualización -->
+          <button class="btn-action btn-mas" onclick="mostrarSubseccionMas('calendario')">
+            <span class="material-icons">calendar_month</span>
+            Guardias y Recordatorios
+          </button>
+          <button class="btn-action btn-mas" onclick="mostrarSubseccionMas('creditos')">
+            <span class="material-icons">info</span>
+            Créditos y Contacto
+          </button>
+          <!-- Solo visible si hay actualización -->
+          <button id="btn-mas-actualizar" class="btn-action btn-mas" style="display:none"
+            onclick="mostrarSubseccionMas('actualizacion')">
+            <span class="material-icons">update</span>
+            Actualizar App
+          </button>
+        </div>
+        <!-- Sub-secciones (se muestra una a la vez) -->
+        <div id="sub-mas-calendario" class="sub-mas" style="display:none">
+          <h2>Mis guardias</h2>
+          <div id="calendario-guardias"></div>
+        </div>
+        <div id="sub-mas-creditos" class="sub-mas" style="display:none">
           <div class="creditos-container">
             <img src="img/logo-honda.png" alt="Honda Logo" class="logo-creditos" />
             <h2>Créditos</h2>
             <p><strong>Desarrollado por:</strong> Israel Ortiz</p>
             <p><strong>Versión:</strong> 1.1 · 2025</p>
             <p><strong>Correo:</strong> fortiz.hondamontejo@gmail.com</p>
-            <p><strong>Facebook:</strong> <a href="https://fb.com/honda.israelortiz" target="_blank">fb.com/honda.israelortiz</a></p>
+            <p><strong>Facebook:</strong> <a href="https://fb.com/honda.israelortiz"
+                target="_blank">fb.com/honda.israelortiz</a></p>
             <p class="footer-copy">© HondaGo· Todos los derechos reservados</p>
-            <button id="btn-buscar-update">🔄 Buscar actualización</button>
-            <div id="mensaje-actualizacion" style="margin-top: 10px"></div>
 
-            <!-- Botón de actualización -->
-            <div
-              id="actualizacion-info"
-              style="
-                display: none;
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: #23272f;
-                color: #fff;
-                padding: 15px 20px;
-                z-index: 99999;
-              "
-            >
-              <div>
-                <strong>Nueva versión disponible</strong>
-                <ul id="lista-cambios" style="margin: 7px 0 0 0; padding-left: 22px"></ul>
-                <button
-                  id="btn-actualizar"
-                  style="
-                    display: none;
-                    background: #2ecc40;
-                    color: #fff;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 9px 20px;
-                    margin-top: 10px;
-                    font-size: 15px;
-                    cursor: pointer;
-                  "
-                >
-                  Actualizar y ver cambios
-                </button>
-              </div>
-            </div>
           </div>
-        </section>
-      </main>
+        </div>
+        <div id="sub-mas-actualizacion" class="sub-mas" style="display:none">
+          <div id="actualizacion-info">
+            <strong>Nueva versión disponible</strong>
+            <ul id="lista-cambios"></ul>
+            <button id="btn-actualizar">Actualizar y ver cambios</button>
+          </div>
+        </div>
+      </section>
+    </main>
 
-      <nav class="tab-bar">
-        <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">
-          <img src="icons/vehiculo.svg" alt="Vehículos" />
-          <span>Vehículos</span>
-        </button>
-        <button onclick="cambiarTab('enviar')" id="tab-enviar">
-          <img src="icons/cliente.svg" alt="Cliente" />
-          <span>Cliente</span>
-        </button>
-        <button onclick="cambiarTab('oferta')" id="tab-oferta">
-          <img src="icons/banco.svg" alt="Banco" />
-          <span>Banco</span>
-        </button>
-        <button onclick="cambiarTab('incentivos')" id="tab-incentivos">
-          <img src="icons/bonos.svg" alt="Bonos" />
-          <span>Bonos</span>
-        </button>
-        <button onclick="cambiarTab('guardias')" id="tab-guardias">
-          <img src="icons/guardias.svg" alt="Guardias" />
-          <span>Guardias</span>
-        </button>
-        <button onclick="cambiarTab('creditos')" id="tab-creditos">
-          <img src="icons/creditos.svg" alt="Créditos" />
-          <span>Créditos</span>
-        </button>
-      </nav>
-    </div>
-    <!-- Modal simple -->
-    <div id="modalGuardia" class="modal" aria-modal="true" role="dialog" tabindex="-1">
-      <div class="modal-content animate-modal">
-        <span class="modal-close" id="btnCerrarModal" title="Cerrar">&times;</span>
-        <div id="iconModal" style="font-size: 40px; margin-bottom: 10px">👤</div>
-        <h3 id="tituloModalGuardia">Nueva Guardia</h3>
-        <!-- Selección de tipo de evento -->
-        <label for="tipoEvento">Tipo de evento</label>
-        <select id="tipoEvento">
-          <option value="guardia">Guardia</option>
-          <option value="recordatorio">Recordatorio</option>
+    <!-- === MENÚ INFERIOR (TABS) === -->
+    <nav class="tab-bar">
+      <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">
+        <span class="material-icons">directions_car</span>
+        <span>Vehículos</span>
+      </button>
+      <button onclick="cambiarTab('financiamiento')" id="tab-financiamiento">
+        <span class="material-icons">work</span>
+        <span>Financiamiento</span>
+      </button>
+      <button onclick="cambiarTab('mas')" id="tab-mas">
+        <span class="material-icons">menu</span>
+        <span>Más</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- === MODAL GUARDIAS === -->
+  <div id="modalGuardia" class="modal" aria-modal="true" role="dialog" tabindex="-1">
+    <div class="modal-content animate-modal">
+      <span class="modal-close" id="btnCerrarModal" title="Cerrar">&times;</span>
+      <div id="iconModal" style="font-size: 40px; margin-bottom: 10px">👤</div>
+      <h3 id="tituloModalGuardia">Nueva Guardia</h3>
+      <label for="tipoEvento">Tipo de evento</label>
+      <select id="tipoEvento">
+        <option value="guardia">Guardia</option>
+        <option value="recordatorio">Recordatorio</option>
+      </select>
+      <div id="seccionGuardia">
+        <label for="nombreGuardia">Nombre del colaborador</label>
+        <input type="text" id="nombreGuardia" autocomplete="off" placeholder="Nombre del colaborador" />
+        <label for="turnoGuardia">Turno</label>
+        <select id="turnoGuardia">
+          <option value="am">AM - Mañana</option>
+          <option value="pm">PM - Tarde</option>
         </select>
-
-        <!-- GUARDIA -->
-        <div id="seccionGuardia">
-          <label for="nombreGuardia">Nombre del colaborador</label>
-          <input type="text" id="nombreGuardia" autocomplete="off" placeholder="Nombre del colaborador" />
-          <label for="turnoGuardia">Turno</label>
-          <select id="turnoGuardia">
-            <option value="am">AM - Mañana</option>
-            <option value="pm">PM - Tarde</option>
-          </select>
-        </div>
-
-        <!-- RECORDATORIO -->
-        <div id="seccionRecordatorio" style="display: none">
-          <label for="tituloRecordatorio">Título del recordatorio</label>
-          <input type="text" id="tituloRecordatorio" placeholder="Ejemplo: Llamar a proveedor" />
-          <label for="notaRecordatorio">Notas</label>
-          <textarea id="notaRecordatorio" rows="2" placeholder="Detalles, instrucciones, etc."></textarea>
-          <label for="horaRecordatorio">Hora</label>
-          <input type="time" id="horaRecordatorio" />
-        </div>
-
-        <input type="hidden" id="idGuardia" />
-        <button id="guardarGuardia" class="btn-primary">Guardar</button>
-        <button id="btnEliminarGuardia" class="btn-danger">Eliminar</button>
-        <button id="btnCancelar" class="btn-outline">Cancelar</button>
       </div>
+      <div id="seccionRecordatorio" style="display: none">
+        <label for="tituloRecordatorio">Título del recordatorio</label>
+        <input type="text" id="tituloRecordatorio" placeholder="Ejemplo: Llamar a proveedor" />
+        <label for="notaRecordatorio">Notas</label>
+        <textarea id="notaRecordatorio" rows="2" placeholder="Detalles, instrucciones, etc."></textarea>
+        <label for="horaRecordatorio">Hora</label>
+        <input type="time" id="horaRecordatorio" />
+      </div>
+      <input type="hidden" id="idGuardia" />
+      <button id="guardarGuardia" class="btn-primary">Guardar</button>
+      <button id="btnEliminarGuardia" class="btn-danger">Eliminar</button>
+      <button id="btnCancelar" class="btn-outline">Cancelar</button>
     </div>
+  </div>
 
-    <script src="js/html2pdf.bundle.js"></script>
-    <script src="js/app.js"></script>
-    <!-- FullCalendar JS -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-  </body>
+  <!-- === SCRIPTS JS (CARGA ORDENADA) === -->
+  <!-- Firebase App y Firestore (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <!-- HTML2PDF -->
+  <script src="js/html2pdf.bundle.js"></script>
+  <!-- JS principal de la app -->
+  <script src="js/app.js"></script>
+</body>
+
 </html>
