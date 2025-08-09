@@ -2,7 +2,7 @@
 // SERVICE WORKER - CACHE DE PWA
 // =====================================
 
-const CACHE_NAME = "honda-app-cache-clientes";
+const CACHE_NAME = "honda-app-cache-cliente";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
@@ -85,3 +85,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+
