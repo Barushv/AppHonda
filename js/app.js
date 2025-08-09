@@ -180,12 +180,50 @@ function generarPDF() {
   }
 }
 
-// ==============================
-// ENVÍO POR WHATSAPP
-// ==============================
+// =====================================
+// Helper: normaliza el número para wa.me
+// - Acepta: "+1 305 555 0000", "0034 612...", "52XXXXXXXXXX", "9999999999"
+// - Devuelve: SOLO dígitos, con código de país
+// - Si son 10 dígitos (MX), antepone 52 o el código que venga en codPais
+// =====================================
+function buildWaNumber(phoneRaw, codPaisRaw) {
+  // Limpia: deja dígitos y + para detección
+  let p = (phoneRaw || "").trim().replace(/[^\d+]/g, "");
+
+  // Caso 1: usuario ya puso formato internacional "+.."
+  if (p.startsWith("+")) {
+    return p.slice(1).replace(/\D/g, ""); // wa.me no acepta el '+'
+  }
+
+  // Caso 2: usuario puso "00.."
+  if (p.startsWith("00")) {
+    return p.slice(2).replace(/\D/g, "");
+  }
+
+  // Caso 3: solo dígitos
+  let digits = p.replace(/\D/g, "");
+
+  // Si trae más de 10, asumimos que ya incluye código país
+  if (digits.length > 10) return digits;
+
+  // Si son 10 dígitos, asumimos número local y anteponemos código país
+  let cc = (codPaisRaw || "+52").replace(/[^\d]/g, "") || "52";
+  return cc + digits;
+}
+
+// =====================================
+// Enviar WhatsApp (con nombre opcional y número internacional)
+// =====================================
 function enviarACliente() {
-  const numero = document.getElementById("telefono-cliente").value.trim();
-  if (!numero) {
+  const numeroInput = document.getElementById("telefono-cliente");
+  const nombreInput = document.getElementById("nombre-cliente"); // <-- asegúrate de tener este input
+  const codPaisInput = document.getElementById("cod-pais"); // <-- opcional
+
+  const numeroRaw = (numeroInput?.value || "").trim();
+  const nombre = (nombreInput?.value || "").trim();
+  const codPais = (codPaisInput?.value || "").trim();
+
+  if (!numeroRaw) {
     alert("Ingresa un número válido.");
     return;
   }
@@ -193,12 +231,31 @@ function enviarACliente() {
     alert("Faltan datos del vehículo seleccionado.");
     return;
   }
-  const mensaje = encodeURIComponent(
-    `👋 Hola, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.\n\n🚗 Te comparto la ficha del vehículo:\n🔹 Modelo: *${modeloSeleccionado}*\n🔸 Versión: *${versionSeleccionada}*\n💰 Precio: *${precioSeleccionado}*\n\n📞 Si tienes alguna duda o deseas agendar una cita, estoy a tus órdenes para asesorarte.\n\n✉️ Correo: fortiz.hondamontejo@gmail.com\n📘 Facebook: fb.com/honda.israelortiz\n📍 Ubicación: Honda Montejo, Mérida`
-  );
-  setTimeout(() => {
-    window.open(`https://wa.me/${numero}?text=${mensaje}`, "_blank");
-  }, 2500);
+
+  const saludo = nombre
+    ? `👋 Hola *${nombre}*, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.`
+    : `👋 Hola, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.`;
+
+  const texto = `${saludo}
+
+🚗 Te comparto la ficha del vehículo:
+🔹 Modelo: *${modeloSeleccionado}*
+🔸 Versión: *${versionSeleccionada}*
+💰 Precio: *${precioSeleccionado}*
+
+📞 Si tienes alguna duda o deseas agendar una cita, estoy a tus órdenes para asesorarte.
+
+✉️ Correo: fortiz.hondamontejo@gmail.com
+📘 Facebook: fb.com/honda.israelortiz
+📍 Ubicación: Honda Montejo, Mérida`;
+
+  const mensaje = encodeURIComponent(texto);
+
+  // Normaliza número para wa.me (SOLO dígitos, con código país)
+  const numeroWa = buildWaNumber(numeroRaw, codPais);
+
+  // Abre WhatsApp
+  window.open(`https://wa.me/${numeroWa}?text=${mensaje}`, "_blank");
 }
 
 // ==============================
@@ -333,6 +390,7 @@ function abrirModal(fechaStr, modoEdicion = false, eventoData = null) {
   fechaSeleccionada = fechaStr;
   document.getElementById("modalGuardia").style.display = "flex";
   document.getElementById("modalGuardia").focus();
+  document.body.classList.add("modal-open"); // <-- BLOQUEA SCROLL
   if (modoEdicion && eventoData) {
     document.getElementById("idGuardia").value = eventoData.id;
     document.getElementById("nombreGuardia").value = extraerNombre(
@@ -367,6 +425,7 @@ function cerrarModal() {
   document.getElementById("modalGuardia").style.display = "none";
   document.getElementById("nombreGuardia").value = "";
   document.getElementById("idGuardia").value = "";
+  document.body.classList.remove("modal-open"); // <-- RESTAURA SCROLL
 }
 document.getElementById("btnCerrarModal").onclick = document.getElementById(
   "btnCancelar"
@@ -571,4 +630,28 @@ function mostrarToast(mensaje, tipo = "success") {
     toast.style.opacity = 0;
     setTimeout(() => toast.remove(), 700);
   }, 2800);
+}
+
+let lastScrollY = 0;
+
+function abrirModal(fechaStr, modoEdicion = false, eventoData = null) {
+  fechaSeleccionada = fechaStr;
+  document.getElementById("modalGuardia").style.display = "flex";
+  document.getElementById("modalGuardia").focus();
+
+  // --- BLOQUEA SCROLL, GUARDANDO POSICIÓN ---
+  lastScrollY = window.scrollY || window.pageYOffset;
+  document.body.style.top = `-${lastScrollY}px`;
+  document.body.classList.add("modal-open");
+}
+
+function cerrarModal() {
+  document.getElementById("modalGuardia").style.display = "none";
+  document.getElementById("nombreGuardia").value = "";
+  document.getElementById("idGuardia").value = "";
+
+  // --- RESTAURA SCROLL ---
+  document.body.classList.remove("modal-open");
+  document.body.style.top = "";
+  window.scrollTo(0, lastScrollY);
 }

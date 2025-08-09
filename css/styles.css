@@ -265,7 +265,7 @@ select:focus {
 /* --------------- MODAL MAS --------------------- */
 .modal {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   position: fixed;
   z-index: 9999;
@@ -284,7 +284,7 @@ select:focus {
 }
 
 .modal-mas {
-  display: none;
+  display: flex;
   position: fixed;
   left: 0;
   right: 0;
@@ -294,6 +294,8 @@ select:focus {
   background: rgba(20, 20, 25, 0.33);
   align-items: flex-end;
   justify-content: center;
+  width: 100vw;
+  height: 100vh;
 }
 .modal-mas.show {
   display: flex;
@@ -398,17 +400,20 @@ select:focus {
 }
 .modal-content {
   background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 6px 28px rgba(44, 44, 44, 0.16);
-  padding: 36px 32px 22px 32px;
+  border-radius: 24px 24px 0 0 !important; /* Solo esquinas superiores */
+  margin: 0 auto;
+  max-width: 430px;
   width: 100%;
-  max-width: 410px;
+  box-shadow: 0 6px 28px rgba(44, 44, 44, 0.16);
+  padding: 22px 22px 18px 22px;
   min-width: 290px;
   position: relative;
   animation: modalIn 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 11px;
+  box-sizing: border-box;
+  align-items: stretch;
 }
 @keyframes modalIn {
   from {
@@ -546,15 +551,19 @@ select:focus {
   }
 }
 .modal-mas-content {
+  border-radius: 24px 24px 0 0 !important; /* Solo esquinas superiores */
+  margin: 0 auto;
+  max-width: 430px;
   width: 100%;
-  max-width: 450px;
-  min-height: 60vh;
+  min-height: 55vh;
   background: var(--color-white);
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 2px 28px rgba(0, 0, 0, 0.21);
-  padding: 18px 14px 8px 14px;
+  box-shadow: 0 2px 18px rgba(44, 44, 44, 0.14);
+  padding: 22px 22px 18px 22px;
   position: relative;
+  display: flex;
+  flex-direction: column;
   animation: slideUp 0.32s cubic-bezier(0.33, 1.6, 0.51, 1);
+  align-items: stretch;
 }
 @keyframes slideUp {
   0% {
@@ -668,76 +677,98 @@ select:focus {
   transform: scale(0.98);
 }
 
+body.modal-open {
+  overflow: hidden !important; /* Evita scroll en el fondo */
+  position: fixed;
+  width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
 /* --------------- ENVIAR CLIENTE WHATSAPP --------------------- */
+/* --------------- ENVIAR CLIENTE WHATSAPP (refinado, reemplaza el anterior) --------------------- */
 
 #form-whatsapp {
-  max-width: 380px;
-  margin: 36px auto 0 auto;
-  background: #fff;
+  max-width: 460px;
+  margin: 28px auto 0;
+  background: var(--color-white);
   border-radius: 16px;
-  box-shadow: 0 2px 16px 0 rgba(44, 44, 44, 0.07);
-  padding: 24px 28px 18px 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+  padding: 22px 20px 18px;
 }
 
 #form-whatsapp h3 {
-  margin-top: 0;
-  margin-bottom: 0.5em;
-  font-size: 18px;
-  font-weight: 700;
-  color: #e60012;
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-primary);
   text-align: center;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.2px;
 }
 
 #form-whatsapp label {
+  display: block;
   width: 100%;
   text-align: left;
-  font-weight: 600;
-  margin-bottom: 4px;
+  font-weight: 700;
+  margin: 14px 2px 6px;
   font-size: 14px;
-  color: #262626;
+  color: var(--color-text);
 }
 
+#form-whatsapp input[type="text"],
 #form-whatsapp input[type="tel"] {
   width: 100%;
-  padding: 9px 14px;
+  padding: 12px 14px;
   font-size: 16px;
-  border: 1.2px solid #e1e1e1;
-  border-radius: 8px;
-  outline: none;
-  margin-bottom: 0.4em;
+  border: 1.4px solid var(--color-border);
+  border-radius: 10px;
   background: #fafbfc;
-  transition: border-color 0.2s;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
 
+#form-whatsapp input[type="text"]::placeholder,
+#form-whatsapp input[type="tel"]::placeholder {
+  color: #a9afbb;
+}
+
+#form-whatsapp input[type="text"]:focus,
 #form-whatsapp input[type="tel"]:focus {
-  border-color: #e60012;
+  border-color: var(--color-secondary);
   background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
 }
 
+/* Botón dentro del card (usa tu .btn-action global, solo ajustamos layout) */
 #form-whatsapp .btn-action {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 16px;
+  padding: 12px 0;
+  border-radius: 12px;
+  font-weight: 800;
   font-size: 16px;
-  padding: 10px 0;
-  border-radius: 8px;
-  font-weight: 600;
-  background: #009688;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 1px 4px 0 rgba(44, 44, 44, 0.06);
-  transition: background 0.18s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
+  box-shadow: 0 10px 18px rgba(18, 140, 126, 0.18);
 }
 
-#form-whatsapp .btn-action:hover {
-  background: #00796b;
+/* Conserva tu color verde y hover existentes si ya tenías estas reglas */
+#btn-enviar {
+  background-color: var(--color-success);
+}
+#btn-enviar:hover {
+  background-color: var(--color-success-dark);
+}
+
+@media (max-width: 420px) {
+  #form-whatsapp {
+    padding: 18px 16px 14px;
+  }
 }

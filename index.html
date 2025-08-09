@@ -74,6 +74,9 @@
         <!-- Formulario de WhatsApp integrado -->
         <div id="form-whatsapp">
           <h3>Enviar ficha al cliente</h3>
+          <label for="nombre-cliente">Nombre del cliente</label>
+          <input type="text" id="nombre-cliente" placeholder="Ej. Juan Pérez" autocomplete="name" />
+
           <label for="telefono-cliente">Número WhatsApp:</label>
           <input type="tel" id="telefono-cliente" placeholder="52XXXXXXXXXX" />
           <button class="btn-action" id="btn-enviar" onclick="enviarACliente()">🚀 Enviar WhatsApp</button>
@@ -169,12 +172,14 @@
       </select>
       <div id="seccionGuardia">
         <label for="nombreGuardia">Nombre del colaborador</label>
-        <input type="text" id="nombreGuardia" autocomplete="off" placeholder="Nombre del colaborador" />
-        <label for="turnoGuardia">Turno</label>
-        <select id="turnoGuardia">
-          <option value="am">AM - Mañana</option>
-          <option value="pm">PM - Tarde</option>
-        </select>
+        <input type="text" id="nombreGuardia" list="colaboradores" autocomplete="off"
+          placeholder="Nombre del colaborador" />
+        <datalist id="colaboradores">
+          <label for="turnoGuardia">Turno</label>
+          <select id="turnoGuardia">
+            <option value="am">AM - Mañana</option>
+            <option value="pm">PM - Tarde</option>
+          </select>
       </div>
       <div id="seccionRecordatorio" style="display: none">
         <label for="tituloRecordatorio">Título del recordatorio</label>
