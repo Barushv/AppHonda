@@ -1,3 +1,10 @@
+/* Anti overflow y box-sizing consistente */
+html, body { width:100%; max-width:100%; overflow-x:hidden; }
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Si usas un contenedor raíz */
+.app-container { overflow-x: hidden; }
+
 :root {
   --color-primary: #e60012;
   --color-secondary: #007aff;
@@ -32,7 +39,8 @@ body.dark-mode {
 body {
   margin: 0;
   font-family: var(--font-main);
-  padding-bottom: 70px;
+  /* Compensa tab-bar + safe area */
+  padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   background-color: var(--color-bg);
   color: var(--color-text);
 }
@@ -203,19 +211,27 @@ select:focus {
 
 .tab-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   background: var(--color-white);
   border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 2000;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
-  height: 62px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+
+  /* Alto + notch/gestos */
+  height: calc(62px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
+
+/* Asegura que nada fuerce el ancho */
+.tab-bar button { min-width: 0; }
+.tab-bar img, .tab-bar .material-icons { max-width: 100%; }
+
 .tab-bar button {
+  min-width: 0;
   background: none;
   border: none;
   outline: none;
@@ -384,47 +400,32 @@ select:focus {
   display: none;
   position: fixed;
   z-index: 9999;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(30, 30, 30, 0.3); /* Fondo semitransparente */
+  inset: 0;
+  background: rgba(30,30,30,0.3);
   align-items: center;
   justify-content: center;
 }
 .modal.show,
-.modal[style*="display: flex"] {
-  display: flex !important;
-}
+.modal[style*="display: flex"] { display: flex !important; }
+
 .modal-content {
   background: #fff;
-  border-radius: 24px 24px 0 0 !important; /* Solo esquinas superiores */
+  border-radius: 24px 24px 0 0 !important;
   margin: 0 auto;
   max-width: 430px;
   width: 100%;
-  box-shadow: 0 6px 28px rgba(44, 44, 44, 0.16);
-  padding: 22px 22px 18px 22px;
+  box-shadow: 0 6px 28px rgba(44,44,44,0.16);
+  padding: 22px;
   min-width: 290px;
   position: relative;
-  animation: modalIn 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
+  animation: modalIn .2s ease;
+  display: flex; flex-direction: column; gap: 11px;
   box-sizing: border-box;
-  align-items: stretch;
 }
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
+
+@keyframes modalIn { from {opacity:0; transform:scale(.96);} to {opacity:1; transform:scale(1);} }
+  
+
 .modal-close {
   position: absolute;
   top: 15px;
@@ -529,52 +530,30 @@ select:focus {
 .modal-mas {
   display: none;
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
+  inset: 0;
   z-index: 3000;
-  background: rgba(20, 20, 25, 0.33);
+  background: rgba(20,20,25,0.33);
   align-items: flex-end;
   justify-content: center;
 }
-.modal-mas.show {
-  display: flex;
-  animation: fadeIn 0.21s;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+.modal-mas.show { display:flex; animation: fadeIn .21s; }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
 .modal-mas-content {
-  border-radius: 24px 24px 0 0 !important; /* Solo esquinas superiores */
+  border-radius: 24px 24px 0 0 !important;
   margin: 0 auto;
   max-width: 430px;
   width: 100%;
   min-height: 55vh;
   background: var(--color-white);
-  box-shadow: 0 2px 18px rgba(44, 44, 44, 0.14);
-  padding: 22px 22px 18px 22px;
+  box-shadow: 0 2px 18px rgba(44,44,44,0.14);
+  padding: 22px;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  animation: slideUp 0.32s cubic-bezier(0.33, 1.6, 0.51, 1);
-  align-items: stretch;
+  display: flex; flex-direction: column; align-items: stretch;
+  animation: slideUp .32s cubic-bezier(.33,1.6,.51,1);
 }
-@keyframes slideUp {
-  0% {
-    transform: translateY(90px);
-    opacity: 0;
-  }
-  100% {
-    transform: none;
-    opacity: 1;
-  }
-}
+@keyframes slideUp { 0%{transform:translateY(90px); opacity:0;} 100%{transform:none; opacity:1;} }
+
 .modal-mas-close {
   position: absolute;
   top: 9px;
@@ -694,11 +673,12 @@ body.modal-open {
 
 #form-whatsapp {
   max-width: 460px;
+  width: calc(100% - 24px);   /* respiración en móviles */
   margin: 28px auto 0;
   background: var(--color-white);
   border-radius: 16px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
-  padding: 22px 20px 18px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.08);
+  padding: 22px 16px 18px;
 }
 
 #form-whatsapp h3 {
@@ -719,29 +699,17 @@ body.modal-open {
   font-size: 14px;
   color: var(--color-text);
 }
-
-#form-whatsapp input[type="text"],
+                                                                                                                   #form-whatsapp input[type="text"],
 #form-whatsapp input[type="tel"] {
   width: 100%;
-  padding: 12px 14px;
-  font-size: 16px;
-  border: 1.4px solid var(--color-border);
-  border-radius: 10px;
-  background: #fafbfc;
-  outline: none;
-  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  font-size: 16px;  /* evita auto-zoom iOS */
+  min-height: 44px;
 }
-
-#form-whatsapp input[type="text"]::placeholder,
-#form-whatsapp input[type="tel"]::placeholder {
-  color: #a9afbb;
-}
-
 #form-whatsapp input[type="text"]:focus,
 #form-whatsapp input[type="tel"]:focus {
+  outline: none;
   border-color: var(--color-secondary);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(0,122,255,.08);
 }
 
 /* Botón dentro del card (usa tu .btn-action global, solo ajustamos layout) */
