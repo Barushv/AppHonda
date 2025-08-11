@@ -805,3 +805,22 @@ body.modal-open {
 .selection-bar.show {
   display: flex;
 }
+
+/* Igualar ancho de los 2 CTA principales */
+#btn-generar,
+#btn-enviar {
+  width: 100%;
+  max-width: 340px;   /* Ajusta a 320/360 si prefieres */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* (Opcional) en pantallas un poquito más grandes puedes darle un toquecito más de ancho */
+@media (min-width: 480px) {
+  #btn-generar,
+  #btn-enviar {
+    max-width: 360px;
+  }
+}
+
