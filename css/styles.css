@@ -1,27 +1,28 @@
-/* Anti overflow y box-sizing consistente */
-html, body { width:100%; max-width:100%; overflow-x:hidden; }
-*, *::before, *::after { box-sizing: border-box; }
-
-/* Si usas un contenedor raíz */
-.app-container { overflow-x: hidden; }
-
+/* ============================
+   TOKENS / VARIABLES CSS
+============================= */
 :root {
-  --color-primary: #e60012;
-  --color-secondary: #007aff;
-  --color-accent: #ff0000;
-  --color-success: #128c7e;
-  --color-success-dark: #075e54;
-  --color-text: #333;
-  --color-bg: #f9f9f9;
-  --color-white: #ffffff;
-  --color-border: #ccc;
+  --color-primary: #e60012; /* Rojo Honda */
+  --color-secondary: #007aff; /* Azul para elementos activos */
+  --color-accent: #ff0000; /* Rojo para botones principales */
+  --color-success: #128c7e; /* Verde WhatsApp */
+  --color-success-dark: #075e54; /* Verde más oscuro para hover */
+  --color-text: #333; /* Texto general */
+  --color-bg: #f9f9f9; /* Fondo claro */
+  --color-white: #ffffff; /* Blanco general */
+  --color-border: #ccc; /* Bordes suaves */
+
   --font-main: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  --radius-base: 10px;
-  --transition-fast: 0.3s ease;
-  --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.1);
-  --shadow-hover: 0 -2px 8px rgba(0, 0, 0, 0.05);
+
+  --radius-base: 10px; /* Bordes redondeados */
+  --transition-fast: 0.3s ease; /* Transiciones */
+  --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  --shadow-hover: 0 -2px 8px rgba(0, 0, 0, 0.05); /* Sombra hover */
 }
 
+/* ============================
+   MODO OSCURO
+============================= */
 body.dark-mode {
   --color-primary: #ff5b5b;
   --color-secondary: #66b2ff;
@@ -32,42 +33,66 @@ body.dark-mode {
   --color-bg: #1a1a1a;
   --color-white: #2b2b2b;
   --color-border: #444;
+
   --shadow-soft: 0 2px 6px rgba(255, 255, 255, 0.05);
   --shadow-hover: 0 -2px 8px rgba(255, 255, 255, 0.1);
 }
 
+/* ============================
+   GLOBAL: anti-overflow y box model
+============================= */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+.app-container {
+  overflow-x: hidden;
+}
+
+/* ============================
+   BODY / SAFE-AREA
+============================= */
 body {
   margin: 0;
   font-family: var(--font-main);
-  /* Compensa tab-bar + safe area */
+  /* compensa tab bar + safe area */
   padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   background-color: var(--color-bg);
   color: var(--color-text);
 }
 
+/* ============================
+   HEADER
+============================= */
 .app-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative; /* <- Esto es clave */
+  position: relative;
   padding: 18px 32px 14px 32px;
   background: #fff;
   border-bottom: 1.5px solid #eee;
 }
-
 .header-center {
   flex: 1;
   text-align: center;
 }
-
 .app-header h1 {
-  font-size: 2rem;
-  color: #e60012;
   margin: 0;
+  font-size: 2rem;
+  color: var(--color-primary);
   letter-spacing: 1px;
   font-weight: 700;
 }
 
+/* botón modo oscuro */
 .darkmode-btn {
   position: absolute;
   right: 32px;
@@ -84,7 +109,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-
 .darkmode-btn:hover {
   background: #f4f4f4;
 }
@@ -97,36 +121,18 @@ body.dark-mode .darkmode-btn .material-icons {
   color: #ffe62e;
 }
 
-.darkmode-btn {
-  background: none;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  padding: 7px 7px 7px 7px;
-  border-radius: 50%;
-  transition: background 0.19s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.darkmode-btn:hover {
-  background: #f4f4f4;
-}
-.darkmode-btn .material-icons {
-  font-size: 28px;
-  color: #444;
-  transition: color 0.2s;
-}
-body.dark-mode .darkmode-btn .material-icons {
-  color: #ffe62e;
-}
-
+/* ============================
+   TITULOS SECCIONES
+============================= */
 .tab-section h2 {
   text-align: center;
   margin-top: 20px;
   font-size: 22px;
 }
 
+/* ============================
+   LOGO PRINCIPAL VEHÍCULO
+============================= */
 #logo-vehiculo {
   width: 100%;
   max-width: 350px;
@@ -134,7 +140,16 @@ body.dark-mode .darkmode-btn .material-icons {
   margin: 20px auto 0;
   height: auto;
 }
+.section-logo {
+  width: 100%;
+  max-width: 350px;
+  display: block;
+  margin: 20px auto;
+}
 
+/* ============================
+   SELECTORES DE VEHÍCULOS
+============================= */
 #selector-menu {
   text-align: center;
   margin: 15px 0;
@@ -151,6 +166,9 @@ select:focus {
   border-color: var(--color-secondary);
 }
 
+/* ============================
+   BOTONES PRINCIPALES
+============================= */
 .btn-action {
   display: block;
   width: 80%;
@@ -170,6 +188,7 @@ select:focus {
   background-color: var(--color-secondary);
   transform: scale(1.03);
 }
+
 #btn-enviar {
   background-color: var(--color-success);
 }
@@ -177,6 +196,9 @@ select:focus {
   background-color: var(--color-success-dark);
 }
 
+/* ============================
+   IMAGEN VEHÍCULO Y PRECIO
+============================= */
 #imagen {
   max-width: 100%;
   width: 800px;
@@ -190,6 +212,9 @@ select:focus {
   font-size: 18px;
 }
 
+/* ============================
+   QR CONTACTO
+============================= */
 #qr-contacto {
   display: none;
   text-align: center;
@@ -199,39 +224,62 @@ select:focus {
   width: 120px;
 }
 
-/* ------------------- TAB BAR -------------------- */
+/* ============================
+   IFRAMES DE PDFS
+============================= */
+iframe {
+  width: 100%;
+  height: 85vh;
+  border: none;
+}
 
+/* ============================
+   GUARDIAS
+============================= */
+.guardias-img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+}
+#guardias {
+  padding: 16px;
+}
+
+/* ============================
+   SECCIONES dinámicas
+============================= */
 .tab-section {
   display: none;
 }
-
 .tab-section.active {
   display: block;
 }
 
+/* ============================
+   TAB BAR (safe area)
+============================= */
 .tab-bar {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: var(--color-white);
   border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 2000;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
 
-  /* Alto + notch/gestos */
   height: calc(62px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
 }
-
-/* Asegura que nada fuerce el ancho */
-.tab-bar button { min-width: 0; }
-.tab-bar img, .tab-bar .material-icons { max-width: 100%; }
-
 .tab-bar button {
-  min-width: 0;
   background: none;
   border: none;
   outline: none;
@@ -244,21 +292,12 @@ select:focus {
   color: var(--color-text);
   font-size: 12px;
   transition: color 0.23s;
+  min-width: 0;
 }
 .tab-bar button.active,
 .tab-bar button:focus {
   color: var(--color-primary);
 }
-.tab-bar .svg-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 3px;
-}
-.tab-bar .svg-icon svg {
-  display: block;
-}
-
 .tab-bar img {
   width: 28px;
   height: 28px;
@@ -269,7 +308,6 @@ select:focus {
 .tab-bar button span {
   font-size: 11px;
 }
-
 .tab-bar .material-icons {
   font-size: 28px;
   line-height: 1;
@@ -277,331 +315,14 @@ select:focus {
   margin-bottom: 2px;
   color: inherit;
 }
-
-/* --------------- MODAL MAS --------------------- */
-.modal {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(30, 30, 30, 0.3);
-  align-items: center;
-  justify-content: center;
-}
-.modal[style*="display: flex"] {
-  display: flex !important;
+.tab-bar img,
+.tab-bar .material-icons {
+  max-width: 100%;
 }
 
-.modal-mas {
-  display: flex;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
-  z-index: 3000;
-  background: rgba(20, 20, 25, 0.33);
-  align-items: flex-end;
-  justify-content: center;
-  width: 100vw;
-  height: 100vh;
-}
-.modal-mas.show {
-  display: flex;
-  animation: fadeIn 0.21s;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.modal-mas-content {
-  width: 100%;
-  max-width: 450px;
-  min-height: 60vh;
-  background: var(--color-white);
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 2px 28px rgba(0, 0, 0, 0.21);
-  padding: 18px 14px 8px 14px;
-  position: relative;
-  animation: slideUp 0.32s cubic-bezier(0.33, 1.6, 0.51, 1);
-}
-@keyframes slideUp {
-  0% {
-    transform: translateY(90px);
-    opacity: 0;
-  }
-  100% {
-    transform: none;
-    opacity: 1;
-  }
-}
-.modal-mas-close {
-  position: absolute;
-  top: 9px;
-  right: 17px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #888;
-  cursor: pointer;
-  transition: color 0.19s;
-}
-.modal-mas-close:hover {
-  color: #e60012;
-}
-.modal-mas-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 17px;
-}
-.modal-mas-tabs button {
-  background: none;
-  border: none;
-  border-bottom: 2.5px solid transparent;
-  font-size: 18px;
-  padding: 7px 16px;
-  color: var(--color-text);
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.23s, color 0.23s;
-}
-.modal-mas-tabs button.active {
-  color: var(--color-primary);
-  border-bottom: 2.5px solid var(--color-primary);
-}
-.modal-mas-panel {
-  min-height: 28vh;
-  max-height: 54vh;
-  overflow-y: auto;
-  transition: display 0.18s;
-}
-@media (max-width: 600px) {
-  .modal-mas-content {
-    max-width: 98vw;
-    min-height: 60vh;
-  }
-}
-
-/* === MODAL CENTRADO PROFESIONAL PARA "NUEVA GUARDIA" === */
-
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  inset: 0;
-  background: rgba(30,30,30,0.3);
-  align-items: center;
-  justify-content: center;
-}
-.modal.show,
-.modal[style*="display: flex"] { display: flex !important; }
-
-.modal-content {
-  background: #fff;
-  border-radius: 24px 24px 0 0 !important;
-  margin: 0 auto;
-  max-width: 430px;
-  width: 100%;
-  box-shadow: 0 6px 28px rgba(44,44,44,0.16);
-  padding: 22px;
-  min-width: 290px;
-  position: relative;
-  animation: modalIn .2s ease;
-  display: flex; flex-direction: column; gap: 11px;
-  box-sizing: border-box;
-}
-
-@keyframes modalIn { from {opacity:0; transform:scale(.96);} to {opacity:1; transform:scale(1);} }
-  
-
-.modal-close {
-  position: absolute;
-  top: 15px;
-  right: 19px;
-  font-size: 28px;
-  color: #c30010;
-  cursor: pointer;
-  transition: color 0.17s;
-  font-weight: bold;
-  background: none;
-  border: none;
-  line-height: 1;
-}
-.modal-close:hover {
-  color: #ff4747;
-}
-.modal-content h3 {
-  margin: 0 0 10px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #e60012;
-  text-align: left;
-}
-.modal-content label {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-.modal-content input,
-.modal-content select,
-.modal-content textarea {
-  width: 100%;
-  padding: 9px 10px;
-  margin-bottom: 10px;
-  border: 1.2px solid #e2e2e2;
-  border-radius: 8px;
-  font-size: 15px;
-  outline: none;
-  background: #fafbfc;
-  transition: border-color 0.16s;
-}
-.modal-content input:focus,
-.modal-content select:focus,
-.modal-content textarea:focus {
-  border-color: #e60012;
-  background: #fff;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
-}
-.btn-primary {
-  background: #e60012;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-.btn-primary:hover {
-  background: #b90c17;
-}
-.btn-outline {
-  background: none;
-  border: 1.5px solid #bdbdbd;
-  color: #555;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.18s;
-}
-.btn-outline:hover {
-  border-color: #e60012;
-  color: #e60012;
-}
-.btn-danger {
-  background: #b71c1c;
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-.btn-danger:hover {
-  background: #a31515;
-}
-@media (max-width: 600px) {
-  .modal-content {
-    max-width: 96vw;
-    min-width: 0;
-    padding: 18px 6vw 18px 6vw;
-  }
-}
-
-.modal-mas {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  background: rgba(20,20,25,0.33);
-  align-items: flex-end;
-  justify-content: center;
-}
-.modal-mas.show { display:flex; animation: fadeIn .21s; }
-@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-
-.modal-mas-content {
-  border-radius: 24px 24px 0 0 !important;
-  margin: 0 auto;
-  max-width: 430px;
-  width: 100%;
-  min-height: 55vh;
-  background: var(--color-white);
-  box-shadow: 0 2px 18px rgba(44,44,44,0.14);
-  padding: 22px;
-  position: relative;
-  display: flex; flex-direction: column; align-items: stretch;
-  animation: slideUp .32s cubic-bezier(.33,1.6,.51,1);
-}
-@keyframes slideUp { 0%{transform:translateY(90px); opacity:0;} 100%{transform:none; opacity:1;} }
-
-.modal-mas-close {
-  position: absolute;
-  top: 9px;
-  right: 17px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #888;
-  cursor: pointer;
-  transition: color 0.19s;
-}
-.modal-mas-close:hover {
-  color: #e60012;
-}
-.modal-mas-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 17px;
-}
-.modal-mas-tabs button {
-  background: none;
-  border: none;
-  border-bottom: 2.5px solid transparent;
-  font-size: 18px;
-  padding: 7px 16px;
-  color: var(--color-text);
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.23s, color 0.23s;
-}
-.modal-mas-tabs button.active {
-  color: var(--color-primary);
-  border-bottom: 2.5px solid var(--color-primary);
-}
-.modal-mas-panel {
-  min-height: 28vh;
-  max-height: 54vh;
-  overflow-y: auto;
-  transition: display 0.18s;
-}
-@media (max-width: 600px) {
-  .modal-mas-content {
-    max-width: 98vw;
-    min-height: 60vh;
-  }
-}
-
+/* ============================
+   CRÉDITOS / MÁS
+============================= */
 .creditos-container {
   text-align: center;
   padding: 2rem 1rem;
@@ -633,6 +354,12 @@ select:focus {
   max-width: 400px;
   margin-bottom: 1rem;
 }
+.footer-copy {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  color: var(--color-border);
+}
+
 .btn-refresh {
   background-color: #007bff;
   color: white;
@@ -656,31 +383,232 @@ select:focus {
   transform: scale(0.98);
 }
 
+#actualizacion-info {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  padding: 12px;
+  margin: 20px auto;
+  border-radius: 8px;
+  max-width: 90%;
+  text-align: center;
+}
+#actualizacion-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  font-size: 14px;
+}
+#actualizacion-info li::before {
+  content: "✔️ ";
+  margin-right: 5px;
+}
+#btn-actualizar {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+/* ============================
+   FULLCALENDAR tweaks
+============================= */
+.fc-event-title .badge-colaborador {
+  background: #fff;
+  color: #333;
+  border-radius: 8px;
+  padding: 2px 9px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 7px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.09);
+  display: inline-block;
+  vertical-align: middle;
+  letter-spacing: 0.1px;
+}
+.fc-event {
+  cursor: pointer;
+}
+#calendario-guardias {
+  max-width: 1000px;
+  width: 100%;
+  margin: 30px auto;
+  padding: 0 8px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================
+   MODALES (UNIFICADO)
+============================= */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(30, 30, 30, 0.3);
+  align-items: center;
+  justify-content: center;
+}
+.modal.show,
+.modal[style*="display: flex"] {
+  display: flex !important;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 24px 24px 0 0 !important;
+  margin: 0 auto;
+  max-width: 430px;
+  width: 100%;
+  box-shadow: 0 6px 28px rgba(44, 44, 44, 0.16);
+  padding: 22px;
+  min-width: 290px;
+  position: relative;
+  animation: modalIn 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  box-sizing: border-box;
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  font-size: 28px;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.2s;
+}
+.modal-close:hover {
+  color: #e60012;
+}
+
+/* bloquea scroll fondo cuando modal abierto */
 body.modal-open {
-  overflow: hidden !important; /* Evita scroll en el fondo */
+  overflow: hidden !important;
   position: fixed;
   width: 100vw;
-  width: 100vw;
   height: 100vh;
-  top: 0;
-  left: 0;
+  inset: 0;
   overscroll-behavior: contain;
   touch-action: none;
 }
 
-/* --------------- ENVIAR CLIENTE WHATSAPP --------------------- */
-/* --------------- ENVIAR CLIENTE WHATSAPP (refinado, reemplaza el anterior) --------------------- */
+/* Modal tipo hoja para "Más" */
+.modal-mas {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(20, 20, 25, 0.33);
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-mas.show {
+  display: flex;
+  animation: fadeIn 0.21s;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
+.modal-mas-content {
+  width: 100%;
+  max-width: 450px;
+  min-height: 55vh;
+  background: var(--color-white);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 2px 18px rgba(44, 44, 44, 0.14);
+  padding: 22px;
+  position: relative;
+  animation: slideUp 0.32s cubic-bezier(0.33, 1.6, 0.51, 1);
+}
+@keyframes slideUp {
+  0% {
+    transform: translateY(90px);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.modal-mas-close {
+  position: absolute;
+  top: 9px;
+  right: 17px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.19s;
+}
+.modal-mas-close:hover {
+  color: #e60012;
+}
+
+.modal-mas-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+.modal-mas-tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  font-size: 18px;
+  padding: 7px 16px;
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.23s, color 0.23s;
+}
+.modal-mas-tabs button.active {
+  color: var(--color-primary);
+  border-bottom: 2.5px solid var(--color-primary);
+}
+.modal-mas-panel {
+  min-height: 28vh;
+  max-height: 54vh;
+  overflow-y: auto;
+}
+
+/* ============================
+   FORM WHATSAPP (REFINADO)
+============================= */
 #form-whatsapp {
   max-width: 460px;
-  width: calc(100% - 24px);   /* respiración en móviles */
+  width: calc(100% - 24px); /* respiración móvil */
   margin: 28px auto 0;
   background: var(--color-white);
   border-radius: 16px;
-  box-shadow: 0 10px 26px rgba(0,0,0,.08);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
   padding: 22px 16px 18px;
 }
-
 #form-whatsapp h3 {
   margin: 0 0 10px 0;
   font-size: 20px;
@@ -689,7 +617,6 @@ body.modal-open {
   text-align: center;
   letter-spacing: 0.2px;
 }
-
 #form-whatsapp label {
   display: block;
   width: 100%;
@@ -699,20 +626,28 @@ body.modal-open {
   font-size: 14px;
   color: var(--color-text);
 }
-                                                                                                                   #form-whatsapp input[type="text"],
+#form-whatsapp input[type="text"],
 #form-whatsapp input[type="tel"] {
   width: 100%;
-  font-size: 16px;  /* evita auto-zoom iOS */
+  padding: 12px 14px;
+  font-size: 16px; /* evita auto-zoom iOS */
   min-height: 44px;
+  border: 1.4px solid var(--color-border);
+  border-radius: 10px;
+  background: #fafbfc;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+#form-whatsapp input[type="text"]::placeholder,
+#form-whatsapp input[type="tel"]::placeholder {
+  color: #a9afbb;
 }
 #form-whatsapp input[type="text"]:focus,
 #form-whatsapp input[type="tel"]:focus {
-  outline: none;
   border-color: var(--color-secondary);
-  box-shadow: 0 0 0 3px rgba(0,122,255,.08);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
 }
-
-/* Botón dentro del card (usa tu .btn-action global, solo ajustamos layout) */
 #form-whatsapp .btn-action {
   width: 100%;
   margin-top: 16px;
@@ -726,8 +661,6 @@ body.modal-open {
   gap: 8px;
   box-shadow: 0 10px 18px rgba(18, 140, 126, 0.18);
 }
-
-/* Conserva tu color verde y hover existentes si ya tenías estas reglas */
 #btn-enviar {
   background-color: var(--color-success);
 }
@@ -739,4 +672,136 @@ body.modal-open {
   #form-whatsapp {
     padding: 18px 16px 14px;
   }
+}
+
+/* ===== Leads (tabla rápida) ===== */
+#sub-mas-leads .lead-meta {
+  text-align: center;
+  color: #777;
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+
+#lead-list {
+  background: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  padding: 8px 8px 2px 8px;
+  overflow-x: auto;
+}
+
+.lead-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.lead-table th,
+.lead-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.lead-table th {
+  text-align: left;
+  color: #555;
+  font-weight: 700;
+}
+
+.lead-table th:first-child,
+.lead-table td:first-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* ===== Leads UI compacta ===== */
+.lead-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0 10px;
+}
+.lead-toolbar input[type="search"] {
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  padding: 10px 12px;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  background: #fff;
+}
+.lead-toolbar select {
+  padding: 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* Botones base compactos */
+.btn {
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+.btn-ghost {
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  color: #333;
+}
+.btn-outline {
+  background: #fff;
+  border: 1px solid #ffd4d4;
+  color: #e60012;
+}
+.btn-danger {
+  background: #e6492d;
+  color: #fff;
+}
+.btn-outline-danger {
+  background: #fff;
+  border: 1px solid #f3b1b1;
+  color: #cc2a16;
+}
+
+/* Tabla: columna de checks compacta */
+.lead-table th:first-child,
+.lead-table td:first-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Paginador y acciones */
+.lead-pager {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0 6px;
+}
+.lead-pager #lead-page-info {
+  font-size: 13px;
+  color: #777;
+}
+
+.lead-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* Barra selección (aparece cuando hay checks) */
+.selection-bar {
+  display: none;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+}
+.selection-bar.show {
+  display: flex;
 }
