@@ -63,16 +63,49 @@ function cargarVersiones() {
   const modelo = document.getElementById("modelo").value;
   const selectVersion = document.getElementById("version");
 
+  // Limpia y deja placeholder
   selectVersion.innerHTML = '<option value="">--Selecciona versión--</option>';
   if (!modelo) return;
 
-  hondaData[modelo].forEach((version) => {
-    const option = document.createElement("option");
-    option.value = version;
-    option.textContent = version;
-    selectVersion.appendChild(option);
-  });
+  // 1) Origen de versiones: a partir de las claves del JSON de precios (si existe),
+  //    y si no, del arreglo hondaData[modelo] como respaldo.
+  let versiones = [];
+  if (precios && precios[modelo]) {
+    versiones = Object.keys(precios[modelo]);
+  } else {
+    versiones = hondaData[modelo] || [];
+  }
 
+  // 2) Separamos por año: 2026 vs (todo lo demás = 2025/previo).
+  const is2026 = (v) => /\b2026\b/.test(v);
+  const v2026 = versiones
+    .filter(is2026)
+    .sort((a, b) => a.localeCompare(b, "es"));
+  const v2025 = versiones
+    .filter((v) => !is2026(v))
+    .sort((a, b) => a.localeCompare(b, "es"));
+
+  // Utilidad: agrega un <optgroup> con opciones
+  const addGroup = (label, arr, year) => {
+    if (!arr.length) return;
+    const og = document.createElement("optgroup");
+    og.label = label;
+    arr.forEach((val) => {
+      const op = document.createElement("option");
+      op.value = val; // Importante: value conserva el nombre con año (p.ej. "Turbo Plus 2026")
+      // Texto visible sin el año al final (ej. "Turbo Plus")
+      const display = val.replace(/\s20\d{2}\b/g, "");
+      op.textContent = display;
+      og.appendChild(op);
+    });
+    selectVersion.appendChild(og);
+  };
+
+  // 3) Pintamos grupos: primero 2026 y luego 2025
+  addGroup("Versiones 2026", v2026, 2026);
+  addGroup("Versiones 2025", v2025, 2025);
+
+  // 4) Imagen y verificación como tenías
   actualizarImagen(modelo);
   verificarCargado();
 }

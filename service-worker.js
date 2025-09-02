@@ -2,7 +2,7 @@
 // SERVICE WORKER - CACHE DE PWA
 // =====================================
 
-const CACHE_NAME = "honda-app-cache-lead";
+const CACHE_NAME = "honda-app-cache-2026";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
@@ -50,16 +50,43 @@ self.addEventListener("activate", (event) => {
 // INTERCEPCIÓN DE FETCH - OFFLINE
 // =============================
 self.addEventListener("fetch", (event) => {
-  if (event.request.url.endsWith(".pdf")) {
-    // Para PDFs, intenta primero obtener la versión nueva del servidor
+  const url = new URL(event.request.url);
+
+  // PDFs: red primero
+  if (url.pathname.endsWith(".pdf")) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Actualiza la caché con la nueva versión
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // precios.json: red primero
+  if (url.pathname.endsWith("/json/precios.json")) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Resto: cache primero
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
+});
           return response;
         })
         .catch(() => {
