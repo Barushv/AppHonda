@@ -3,7 +3,7 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "hondago-cache-v7";
+const CACHE_NAME = "hondago-cache-v7.1";
 
 // Archivos base a precachear
 const urlsToCache = [

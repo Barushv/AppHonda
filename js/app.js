@@ -313,6 +313,184 @@ function updateLeadCounter() {
   if (el) el.textContent = getLeads().length;
 }
 
+// ==============================
+// Backup (Export) y Restore (Import) de Leads en JSON
+// ==============================
+
+// Exporta TODOS los leads a un archivo .json (respaldo fiel, sin pérdida)
+function exportLeadsJSON() {
+  const payload = {
+    meta: {
+      app: "HondaGo",
+      schema: 1,
+      exportedAt: new Date().toISOString(),
+    },
+    leads: getLeads(),
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `leads-hondago-backup-${new Date()
+    .toISOString()
+    .slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Abre el selector de archivo (input oculto)
+function openRestoreLeadsDialog() {
+  const input = document.getElementById("lead-restore-file");
+  if (input) {
+    input.value = ""; // limpia selección previa
+    input.click();
+  }
+}
+
+// Al cargar, conectamos el input-file para restaurar
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("lead-restore-file");
+  if (input && !input._restoreBound) {
+    input._restoreBound = true;
+    input.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      await restoreLeadsFromFile(file);
+    });
+  }
+});
+
+// Helper: normaliza teléfono para dedupe (si no existiera ya en tu código)
+if (typeof normalizePhoneRaw !== "function") {
+  function normalizePhoneRaw(raw) {
+    return String(raw || "").replace(/[^\d+]/g, "");
+  }
+}
+
+// Restaura leads desde archivo .json
+// - Si aceptas en el confirm: REEMPLAZA todo por el backup (sin duplicados internos)
+// - Si cancelas en el confirm: FUSIONA con lo actual (sin duplicados)
+async function restoreLeadsFromFile(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    // Soporta {leads:[...]} o directamente [...]
+    let incoming = Array.isArray(data)
+      ? data
+      : Array.isArray(data.leads)
+      ? data.leads
+      : null;
+    if (!incoming) {
+      alert("El archivo no tiene el formato esperado.");
+      return;
+    }
+
+    const replaceAll = confirm(
+      "¿Reemplazar TODOS los leads actuales por el respaldo?\n\nAceptar = Reemplazar todo\nCancelar = Fusionar sin duplicados"
+    );
+
+    const current = getLeads();
+
+    // Dedupe keys
+    const keyFor = (l) => {
+      const phone = normalizePhoneRaw(l.phoneRaw || "");
+      const day = (l.dateISO || "").slice(0, 10); // YYYY-MM-DD
+      return `tel:${phone}|day:${day}|model:${l.model || ""}|version:${
+        l.version || ""
+      }|price:${l.price || ""}`;
+    };
+
+    // Limpia/asegura campos y IDs en los importados
+    const cleaned = incoming.map((l) => {
+      const c = { ...l };
+      if (!c.id) {
+        c.id =
+          typeof generateLeadId === "function"
+            ? generateLeadId()
+            : "ld_" +
+              Date.now().toString(36) +
+              Math.random().toString(36).slice(2, 8);
+      }
+      if (!c.dateISO) c.dateISO = new Date().toISOString();
+      c.name = String(c.name || "");
+      c.phoneRaw = String(c.phoneRaw || "");
+      c.countryCode = String(c.countryCode || "");
+      c.phone = String(c.phone || ""); // wa.me (opcional)
+      c.model = String(c.model || "");
+      c.version = String(c.version || "");
+      c.price = String(c.price || "");
+      return c;
+    });
+
+    let result = [];
+
+    if (replaceAll) {
+      // Reemplaza todo, evitando duplicados dentro del mismo backup
+      const seenIds = new Set();
+      const seenKeys = new Set();
+      for (const l of cleaned) {
+        if (seenIds.has(l.id)) continue;
+        const k = keyFor(l);
+        if (seenKeys.has(k)) continue;
+        seenIds.add(l.id);
+        seenKeys.add(k);
+        result.push(l);
+      }
+    } else {
+      // Fusiona con lo actual (prioriza no duplicar)
+      const byId = new Set(current.map((l) => l.id).filter(Boolean));
+      const keyset = new Set(current.map(keyFor));
+      result = current.slice();
+      for (const l of cleaned) {
+        if (byId.has(l.id)) continue;
+        const k = keyFor(l);
+        if (keyset.has(k)) continue;
+        byId.add(l.id);
+        keyset.add(k);
+        result.push(l);
+      }
+    }
+
+    setLeads(result);
+
+    // Ajusta UI
+    if (typeof updateLeadCounter === "function") updateLeadCounter();
+    if (typeof renderLeadsList === "function") {
+      if (typeof leadPage !== "undefined") {
+        const size =
+          typeof leadUI !== "undefined" && leadUI.pageSize
+            ? leadUI.pageSize
+            : 50;
+        const pages = Math.max(1, Math.ceil(result.length / size));
+        if (leadPage > pages) leadPage = pages;
+      }
+      renderLeadsList();
+    }
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast(
+        replaceAll ? "Leads restaurados (reemplazo)" : "Leads fusionados",
+        "success"
+      );
+    } else {
+      alert(
+        replaceAll
+          ? "Leads restaurados (reemplazo)."
+          : "Leads fusionados sin duplicados."
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    alert("No se pudo restaurar el archivo. Verifica que sea un JSON válido.");
+  }
+}
+
 // --- Estado de UI ---
 let leadPage = 1; // página actual
 let leadUI = {

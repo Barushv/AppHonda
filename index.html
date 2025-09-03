@@ -180,6 +180,16 @@
             <span id="lead-page-info">Página 1 / 1</span>
             <button class="btn btn-outline" onclick="nextLeadPage()">Siguiente ➡️</button>
           </div>
+          <!-- Más acciones: Backup/Restore JSON -->
+          <div class="lead-actions"
+            style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+            <button class="btn btn-ghost" onclick="exportLeadsJSON()">💾 Exportar JSON</button>
+            <button class="btn btn-outline" onclick="openRestoreLeadsDialog()">↩️ Restaurar JSON</button>
+          </div>
+
+          <!-- Input oculto para elegir el archivo de respaldo -->
+          <input type="file" id="lead-restore-file" accept="application/json" style="display:none" />
+
 
           <!-- Acción secundaria -->
           <div class="lead-actions">
