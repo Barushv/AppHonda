@@ -3,7 +3,7 @@
 // ==============================
 const firebaseConfig = {
   apiKey: "AIzaSyC3WZseiyASn9_8JmtSX-7UY0V__MmOGQI",
-  authDomain: "hondaguardias-7c69b.firebaseapp.com",
+  authDomain: "hosndaguardias-7c69b.firebaseapp.com",
   projectId: "hondaguardias-7c69b",
   storageBucket: "hondaguardias-7c69b.appspot.com",
   messagingSenderId: "333873832947",

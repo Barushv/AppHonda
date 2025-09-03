@@ -42,7 +42,7 @@ async function cacheFirst(req) {
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(urlsToCache)));
   // Opcional: instala y queda en 'waiting' hasta que la página pida skipWaiting
-  self.skipWaiting(); // si quieres activar siempre de inmediato, descomenta
+  //self.skipWaiting(); // si quieres activar siempre de inmediato, descomenta
 });
 
 // ---------- Activación ----------
