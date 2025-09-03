@@ -3,7 +3,7 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "hondago-cache-v5";
+const CACHE_NAME = "hondago-cache-v7";
 
 // Archivos base a precachear
 const urlsToCache = [
@@ -53,7 +53,7 @@ self.addEventListener("activate", (event) => {
       await Promise.all(
         keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null))
       );
-      await self.clients.claim(); // toma control de las páginas abiertas
+      await self.clients.claim(); // <-- toma control inmediato
     })()
   );
 });
@@ -70,9 +70,25 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const path = url.pathname;
 
-  // PDFs: red primero (para que 'oferta.pdf' se refresque)
-  if (path.endsWith(".pdf") || path.includes(".pdf?")) {
-    event.respondWith(networkFirst(event.request));
+  // PDFs: RED PRIMERO -> si hay internet, baja el nuevo y lo guarda
+  if (/\/pdf\/[^\/]+\.pdf(\?.*)?$/.test(path)) {
+    event.respondWith(
+      (async () => {
+        try {
+          // cache-bypass a nivel HTTP cache del navegador
+          const req = new Request(event.request.url, { cache: "reload" });
+          const fresh = await fetch(req);
+          const cache = await caches.open(CACHE_NAME);
+          // guardamos bajo la request original (con/ sin query)
+          cache.put(event.request, fresh.clone());
+          return fresh;
+        } catch (err) {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          throw err;
+        }
+      })()
+    );
     return;
   }
 
