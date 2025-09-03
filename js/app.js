@@ -641,6 +641,9 @@ function enviarACliente() {
 // CONTROL DE TABS PRINCIPALES
 // ==============================
 function cambiarTab(tabId) {
+  if (tabId === "financiamiento") {
+    applyPdfVersionParam();
+  }
   // Oculta todas las secciones de tabs
   document
     .querySelectorAll(".tab-section")
@@ -1184,4 +1187,72 @@ purgeSeededLeads(); // <- ejecuta una vez y luego comenta/borra */
     .catch((err) => {
       console.warn("SW registration failed:", err);
     });
+})();
+
+// ==============================
+// PWA Update + PDF cache-busting
+// ==============================
+const ASSET_VER_KEY = "hondago_asset_ver";
+
+function getAssetVer() {
+  return localStorage.getItem(ASSET_VER_KEY) || "1";
+}
+function bumpAssetVer() {
+  const n = parseInt(getAssetVer(), 10) || 1;
+  localStorage.setItem(ASSET_VER_KEY, String(n + 1));
+}
+
+// Aplica ?v=<assetVer> a los iframes de PDFs (se llama al cargar y tras update)
+function applyPdfVersionParam() {
+  const v = getAssetVer();
+  document
+    .querySelectorAll(
+      'iframe[src$="pdf/oferta.pdf"], iframe[src$="pdf/descuentos.pdf"]'
+    )
+    .forEach((ifr) => {
+      const u = new URL(ifr.getAttribute("src"), location.href);
+      u.searchParams.set("v", v);
+      // Deja la ruta en relativo + query para que funcione igual en GitHub Pages
+      ifr.src = `${u.pathname}${u.search}`;
+    });
+}
+
+// Aplica el versionado de PDFs al cargar
+document.addEventListener("DOMContentLoaded", applyPdfVersionParam);
+
+// =========== Registro ÚNICO del Service Worker ===========
+(function registerSW() {
+  if (!("serviceWorker" in navigator)) return;
+
+  const swUrl = new URL("service-worker.js", location.href);
+  navigator.serviceWorker
+    .register(swUrl)
+    .then((reg) => {
+      // Cuando encuentra un SW nuevo, mostramos el botón "Actualizar"
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener("statechange", () => {
+          if (
+            newWorker.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            // Ya hay uno activo: hay actualización lista
+            if (typeof mostrarBotonActualizacion === "function") {
+              mostrarBotonActualizacion();
+            }
+          }
+        });
+      });
+    })
+    .catch((err) => console.warn("SW register error:", err));
+
+  // Cuando el nuevo SW toma control -> incrementa version de assets y recarga
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    bumpAssetVer(); // <- sube versión de assets para bustear los PDFs
+    refreshing = true;
+    location.reload();
+  });
 })();
