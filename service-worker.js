@@ -2,7 +2,7 @@
 // SERVICE WORKER - CACHE DE PWA
 // =====================================
 
-const CACHE_NAME = "honda-app-cache-2026-OfSept";
+const CACHE_NAME = "honda-app-cache-2026";
 const urlsToCache = [
   "index.html",
   "css/styles.css",
