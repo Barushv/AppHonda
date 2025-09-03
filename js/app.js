@@ -1134,3 +1134,54 @@ function mostrarToast(mensaje, tipo = "success") {
   alert("Leads de prueba eliminados. Los reales se conservaron.");
 }
 purgeSeededLeads(); // <- ejecuta una vez y luego comenta/borra */
+
+// --------- Registro del Service Worker con auto-update ---------
+(function registerSW() {
+  if (!("serviceWorker" in navigator)) return;
+
+  // Ruta relativa para que funcione en GitHub Pages /repo/
+  const swUrl = new URL("service-worker.js", location.href);
+
+  navigator.serviceWorker
+    .register(swUrl.href)
+    .then((reg) => {
+      // Fuerza a buscar una versión nueva cuando la pantalla vuelve a ser visible
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          reg.update().catch(() => {});
+        }
+      });
+
+      // Si ya hay un SW esperando -> pídele activarse
+      if (reg.waiting) {
+        reg.waiting.postMessage({ action: "skipWaiting" });
+      }
+
+      // Detecta SW nuevo
+      reg.addEventListener("updatefound", () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+
+        newSW.addEventListener("statechange", () => {
+          if (
+            newSW.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            // Nuevo SW instalado: actívalo y recarga cuando tome control
+            newSW.postMessage({ action: "skipWaiting" });
+          }
+        });
+      });
+
+      // Cuando el SW toma control, recarga 1 vez
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      });
+    })
+    .catch((err) => {
+      console.warn("SW registration failed:", err);
+    });
+})();
