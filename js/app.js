@@ -664,45 +664,49 @@ function deleteSelectedLeads() {
   alert("Lead(s) eliminado(s).");
 }
 
-// --- Exportar CSV (todos) ---
+// =====================================================
+// Exportar CSV (teléfono clickeable) + Borrar todo
+// =====================================================
+
 function exportLeadsCSV() {
   const leads = getLeads();
   if (!leads.length) {
-    alert("No hay leads guardados.");
+    alert("No hay leads.");
     return;
   }
 
+  // Encabezados
   const headers = [
     "Fecha",
     "Nombre",
-    "Teléfono (wa.me)",
+    "WhatsApp (link)", // Excel lo vuelve hipervínculo
     "Teléfono ingresado",
     "Código país",
     "Modelo",
     "Versión",
     "Precio",
   ];
+
   const rows = leads.map((l) => [
     l.dateISO || "",
     l.name || "",
-    l.phone || "",
-    l.phoneRaw || "",
+    l.phone || "", // URL completa https://wa.me/...
+    String(l.phoneRaw || ""), // texto plano
     l.countryCode || "",
     l.model || "",
     l.version || "",
     l.price || "",
   ]);
 
+  // Escapado CSV + BOM UTF-8 para acentos
+  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const toCsv = (arr) =>
-    arr
-      .map((r) =>
-        r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
+    arr.map((r) => r.map((v) => esc(v)).join(",")).join("\r\n");
 
-  const csv = [headers, ...rows];
-  const blob = new Blob([toCsv(csv)], { type: "text/csv;charset=utf-8;" });
+  const csv = "\uFEFF" + toCsv([headers, ...rows]); // BOM UTF-8
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
   a.download = `leads-hondago-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -710,6 +714,15 @@ function exportLeadsCSV() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function clearLeads() {
+  if (!confirm("¿Borrar todos los leads guardados?")) return;
+  localStorage.removeItem(LEADS_KEY);
+  leadPage = 1;
+  renderLeadsList();
+  updateLeadCounter();
+  alert("Leads borrados.");
 }
 
 // --- (Opcional) borrar todo ---
