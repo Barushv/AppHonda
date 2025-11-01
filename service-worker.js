@@ -3,7 +3,7 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "hondago-octubre";
+const CACHE_NAME = "hondago-noviembre";
 
 // Archivos base a precachear
 const urlsToCache = [
