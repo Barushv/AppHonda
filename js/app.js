@@ -317,6 +317,29 @@ function updateLeadCounter() {
 // Backup (Export) y Restore (Import) de Leads en JSON
 // ==============================
 
+// ==============================
+// Compartir archivo (1 tap) - Android/Chrome/PWA
+// Usa el "share sheet" para enviar a WhatsApp, Drive, Gmail, etc.
+// Si no está soportado, cae a descarga normal.
+// ==============================
+async function shareFile1Tap({ filename, blob, title = "HondaGo", text = "" }) {
+  try {
+    if (!navigator.share) return false;
+
+    // En algunos navegadores, canShare valida si soporta compartir archivos
+    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+    const shareData = { title, text, files: [file] };
+
+    if (navigator.canShare && !navigator.canShare(shareData)) return false;
+
+    await navigator.share(shareData);
+    return true;
+  } catch (err) {
+    // Si el usuario cancela o falla, no rompemos el flujo
+    return false;
+  }
+}
+
 // Exporta TODOS los leads a un archivo .json (respaldo fiel, sin pérdida)
 function exportLeadsJSON() {
   const payload = {
@@ -328,19 +351,30 @@ function exportLeadsJSON() {
     leads: getLeads(),
   };
 
+  const filename = `leads-hondago-backup-${new Date().toISOString().slice(0, 10)}.json`;
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `leads-hondago-backup-${new Date()
-    .toISOString()
-    .slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+
+  // ✅ 1 tap: compartir por WhatsApp / Drive / Gmail, etc.
+  shareFile1Tap({
+    filename,
+    blob,
+    title: "HondaGo - Backup de Leads",
+    text: "Respaldo de leads (HondaGo)",
+  }).then((shared) => {
+    if (shared) return;
+
+    // Fallback: descarga normal
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
 }
 
 // Abre el selector de archivo (input oculto)
@@ -687,6 +721,7 @@ function exportLeadsCSV() {
     "Precio",
   ];
 
+  // Filas
   const rows = leads.map((l) => [
     l.dateISO || "",
     l.name || "",
@@ -698,22 +733,38 @@ function exportLeadsCSV() {
     l.price || "",
   ]);
 
-  // Escapado CSV + BOM UTF-8 para acentos
-  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  // Escapar CSV
+  const esc = (v) => {
+    const s = String(v ?? "");
+    if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
   const toCsv = (arr) =>
     arr.map((r) => r.map((v) => esc(v)).join(",")).join("\r\n");
 
   const csv = "\uFEFF" + toCsv([headers, ...rows]); // BOM UTF-8
+  const filename = `leads-hondago-${new Date().toISOString().slice(0, 10)}.csv`;
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `leads-hondago-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // ✅ 1 tap: compartir por WhatsApp / Drive / Gmail, etc.
+  shareFile1Tap({
+    filename,
+    blob,
+    title: "HondaGo - Export de Leads (CSV)",
+    text: "Export de leads (CSV) - HondaGo",
+  }).then((shared) => {
+    if (shared) return;
+
+    // Fallback: descarga normal
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
 }
 
 function clearLeads() {
