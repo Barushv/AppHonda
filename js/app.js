@@ -324,21 +324,29 @@ function updateLeadCounter() {
 // ==============================
 async function shareFile1Tap({ filename, blob, title = "HondaGo", text = "" }) {
   try {
+    // Requiere Web Share API
     if (!navigator.share) return false;
 
-    // En algunos navegadores, canShare valida si soporta compartir archivos
     const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
-    const shareData = { title, text, files: [file] };
 
-    if (navigator.canShare && !navigator.canShare(shareData)) return false;
+    // Algunos navegadores son “quisquillosos” con canShare() (o lo implementan distinto).
+    // Intentamos compartir de todas formas y si falla, hacemos fallback a descarga.
+    try {
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+        // No retornamos aquí: canShare puede fallar aunque share sí funcione.
+      }
+    } catch (_) {
+      // Ignorar validación canShare
+    }
 
-    await navigator.share(shareData);
+    await navigator.share({ title, text, files: [file] });
     return true;
   } catch (err) {
-    // Si el usuario cancela o falla, no rompemos el flujo
+    // Si el usuario cancela o el navegador no soporta compartir archivos, no rompemos el flujo.
     return false;
   }
 }
+
 
 // Exporta TODOS los leads a un archivo .json (respaldo fiel, sin pérdida)
 function exportLeadsJSON() {
