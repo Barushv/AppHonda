@@ -3,7 +3,7 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "hondago-decemberv2tap";
+const CACHE_NAME = "hondago-december2";
 
 // Archivos base a precachear
 const urlsToCache = [
