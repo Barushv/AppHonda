@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Migrar Leads — HondaGo</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f2f2f7; color: #1c1c1e; }
+    h1   { color: #e60012; font-size: 22px; }
+    .card { background: #fff; border-radius: 14px; padding: 18px; margin: 12px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    .btn { display: block; width: 100%; padding: 14px; margin: 10px 0;
+           border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+           cursor: pointer; }
+    .btn-primary { background: #e60012; color: #fff; }
+    .btn-success { background: #128c7e; color: #fff; }
+    .btn-outline { background: #fff; color: #e60012; border: 2px solid #e60012; }
+    .result { margin-top: 12px; font-size: 14px; line-height: 1.6; }
+    .ok   { color: #128c7e; font-weight: 700; }
+    .err  { color: #ff3b30; font-weight: 700; }
+    .info { color: #007aff; }
+    pre   { background: #f2f2f7; border-radius: 8px; padding: 10px;
+            font-size: 12px; overflow-x: auto; max-height: 200px; }
+  </style>
+</head>
+<body>
+  <h1>🔄 Migrador de Leads</h1>
+
+  <div class="card">
+    <strong>Paso 1 — Verificar datos</strong>
+    <p style="font-size:14px;color:#555">Toca el botón para ver cuántos leads hay guardados en cada versión.</p>
+    <button class="btn btn-outline" onclick="verificar()">🔍 Verificar localStorage</button>
+    <div class="result" id="result-verificar"></div>
+  </div>
+
+  <div class="card">
+    <strong>Paso 2 — Migrar</strong>
+    <p style="font-size:14px;color:#555">Copia los leads de v1 a v2 para que la nueva app los vea.</p>
+    <button class="btn btn-primary" onclick="migrar()">⚡ Migrar v1 → v2</button>
+    <div class="result" id="result-migrar"></div>
+  </div>
+
+  <div class="card">
+    <strong>Paso 3 — Exportar como JSON</strong>
+    <p style="font-size:14px;color:#555">Descarga o comparte los leads como respaldo.</p>
+    <button class="btn btn-success" onclick="exportar()">💾 Exportar JSON</button>
+    <div class="result" id="result-exportar"></div>
+  </div>
+
+  <script>
+  function verificar() {
+    const el = document.getElementById("result-verificar");
+    try {
+      const v1raw = localStorage.getItem("hondago_leads_v1");
+      const v2raw = localStorage.getItem("hondago_leads_v2");
+      const v1 = v1raw ? JSON.parse(v1raw) : [];
+      const v2 = v2raw ? JSON.parse(v2raw) : [];
+
+      let html = "";
+      html += `<p>📦 <strong>hondago_leads_v1:</strong> <span class="${v1.length > 0 ? 'ok' : 'err'}">${v1.length} leads</span></p>`;
+      html += `<p>📦 <strong>hondago_leads_v2:</strong> <span class="${v2.length > 0 ? 'ok' : 'info'}">${v2.length} leads</span></p>`;
+
+      if (v1.length > 0) {
+        html += `<p class="ok">✅ Hay ${v1.length} leads en v1 listos para migrar.</p>`;
+        // Mostrar primeros 3
+        html += `<p><strong>Primeros contactos en v1:</strong></p><pre>`;
+        v1.slice(0,3).forEach(l => {
+          html += `${l.name||l.nombre||"Sin nombre"} — ${l.phoneRaw||l.telefono||""} — ${l.model||l.modelo||""}\n`;
+        });
+        html += `</pre>`;
+      } else {
+        html += `<p class="err">❌ No hay leads en v1. Puede que ya estén en v2 o que estén guardados con otra clave.</p>`;
+        // Mostrar todas las claves para investigar
+        html += `<p><strong>Todas las claves en localStorage:</strong></p><pre>`;
+        Object.keys(localStorage).forEach(k => {
+          const val = localStorage.getItem(k);
+          html += `${k}: ${val ? val.length + ' chars' : 'vacío'}\n`;
+        });
+        html += `</pre>`;
+      }
+      el.innerHTML = html;
+    } catch(e) {
+      document.getElementById("result-verificar").innerHTML = `<p class="err">Error: ${e.message}</p>`;
+    }
+  }
+
+  function migrar() {
+    const el = document.getElementById("result-migrar");
+    try {
+      const v1raw = localStorage.getItem("hondago_leads_v1");
+      if (!v1raw) {
+        el.innerHTML = `<p class="err">❌ No hay datos en hondago_leads_v1. Primero verifica en el Paso 1.</p>`;
+        return;
+      }
+      const leadsV1 = JSON.parse(v1raw) || [];
+      if (leadsV1.length === 0) {
+        el.innerHTML = `<p class="err">❌ v1 está vacío.</p>`;
+        return;
+      }
+
+      const adaptados = leadsV1.map((l, i) => ({
+        id:       l.id       || ("ld_" + Date.now().toString(36) + i),
+        dateISO:  l.dateISO  || l.fecha  || new Date().toISOString(),
+        name:     l.name     || l.nombre || "",
+        phone:    l.phone    || l.telefono || "",
+        phoneRaw: l.phoneRaw || l.telefono || "",
+        model:    l.model    || l.modelo  || "",
+        version:  l.version  || l.version || "",
+        price:    l.price    || l.precio  || "",
+        status:   l.status   || "nuevo",
+        notas:    l.notas    || [],
+        fichaUrl: l.fichaUrl || "",
+      }));
+
+      // Fusionar con v2 existente sin duplicar
+      const v2raw = localStorage.getItem("hondago_leads_v2");
+      const v2actual = v2raw ? JSON.parse(v2raw) : [];
+      const idsExistentes = new Set(v2actual.map(l => l.id));
+      const nuevos = adaptados.filter(l => !idsExistentes.has(l.id));
+      const v2final = [...v2actual, ...nuevos];
+
+      localStorage.setItem("hondago_leads_v2", JSON.stringify(v2final));
+
+      el.innerHTML = `
+        <p class="ok">✅ Migración exitosa</p>
+        <p>• Leads en v1: <strong>${leadsV1.length}</strong></p>
+        <p>• Leads nuevos migrados: <strong>${nuevos.length}</strong></p>
+        <p>• Total en v2 ahora: <strong>${v2final.length}</strong></p>
+        <p class="info">Ahora abre la app principal y ve a Más → Leads para verlos.</p>`;
+    } catch(e) {
+      el.innerHTML = `<p class="err">Error: ${e.message}</p>`;
+    }
+  }
+
+  function exportar() {
+    const el = document.getElementById("result-exportar");
+    try {
+      // Intentar exportar v1 primero, luego v2
+      const v1raw = localStorage.getItem("hondago_leads_v1");
+      const v2raw = localStorage.getItem("hondago_leads_v2");
+      const v1 = v1raw ? JSON.parse(v1raw) : [];
+      const v2 = v2raw ? JSON.parse(v2raw) : [];
+      const todos = [...v1, ...v2];
+
+      if (todos.length === 0) {
+        el.innerHTML = `<p class="err">❌ No hay leads para exportar.</p>`;
+        return;
+      }
+
+      const payload = {
+        meta: { app: "HondaGo", schema: 2, exportedAt: new Date().toISOString(), source: "migrador" },
+        leads: todos
+      };
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const filename = `leads-backup-${new Date().toISOString().slice(0,10)}.json`;
+
+      // Intentar Web Share API primero (Android)
+      if (navigator.share) {
+        const file = new File([blob], filename, { type: "application/json" });
+        navigator.share({ title: "HondaGo Leads Backup", files: [file] })
+          .then(() => { el.innerHTML = `<p class="ok">✅ Compartido exitosamente (${todos.length} leads)</p>`; })
+          .catch(() => descargarDirecto(blob, filename, el, todos.length));
+      } else {
+        descargarDirecto(blob, filename, el, todos.length);
+      }
+    } catch(e) {
+      el.innerHTML = `<p class="err">Error: ${e.message}</p>`;
+    }
+  }
+
+  function descargarDirecto(blob, filename, el, count) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    el.innerHTML = `<p class="ok">✅ Descargado: ${filename} (${count} leads)</p>`;
+  }
+  </script>
+</body>
+</html>
