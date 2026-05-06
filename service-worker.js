@@ -3,21 +3,10 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "hondago-enero2026";
+const CACHE_NAME = "HondaGo-v2.1.1";
 
 // Archivos base a precachear
-const urlsToCache = [
-  "index.html",
-  "css/styles.css",
-  "js/app.js",
-  "js/html2pdf.bundle.js",
-  "img/logo-honda.png",
-  "img/icono-pwa.png",
-  "img/guardias.png",
-  "pdf/oferta.pdf",
-  "pdf/descuentos.pdf",
-  "json/precios.json",
-];
+const urlsToCache = ["index.html", "css/styles.css", "js/app.js", "img/logo-honda.png", "img/icono-pwa.png", "img/guardias.png", "json/precios.json"];
 
 // ---------- Helpers ----------
 async function networkFirst(req) {
@@ -50,11 +39,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(
-        keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null))
-      );
+      await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)));
       await self.clients.claim(); // <-- toma control inmediato
-    })()
+    })(),
   );
 });
 
@@ -87,7 +74,7 @@ self.addEventListener("fetch", (event) => {
           if (cached) return cached;
           throw err;
         }
-      })()
+      })(),
     );
     return;
   }
