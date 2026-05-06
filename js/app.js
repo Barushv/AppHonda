@@ -349,7 +349,7 @@ function volverMenuMas() {
 // ==============================
 // LEADS — STORAGE
 // ==============================
-const LEADS_KEY = "hondago_leads_v2";
+const LEADS_KEY = "hondago_leads_v1";
 
 function generateLeadId() {
   try {
