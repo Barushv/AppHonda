@@ -1,5 +1,5 @@
 // ==============================
-// CONFIGURACIÓN FIREBASE
+// FIREBASE
 // ==============================
 const firebaseConfig = {
   apiKey: "AIzaSyC3WZseiyASn9_8JmtSX-7UY0V__MmOGQI",
@@ -9,1250 +9,998 @@ const firebaseConfig = {
   messagingSenderId: "333873832947",
   appId: "1:333873832947:web:18b0b6728ffb541ecf6886",
 };
-// Inicializa Firebase si no existe
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ==============================
-// DATOS DE VEHÍCULOS Y PRECIOS
+// ESTADO GLOBAL
 // ==============================
-const hondaData = {
-  CITY: ["Sport", "Prime", "Touring"],
-  CIVIC: ["i-Style", "Sport HEV", "Touring"],
-  ACCORD: ["Prime", "Touring"],
-  BRV: ["Uniq", "Touring"],
-  HRV: ["Uniq", "Sport", "Touring"],
-  CRV: ["Turbo", "Turbo Plus", "Touring", "Touring Hev"],
-  PILOT: ["Touring", "Black Edition"],
-  ODYSSEY: ["Touring", "Black Edition"],
-};
-let precios = {};
-let modeloSeleccionado = "";
+let catalogoModelos     = [];
+let modeloSeleccionado  = "";
 let versionSeleccionada = "";
-let precioSeleccionado = "";
-let imagenSeleccionada = "";
+let precioSeleccionado  = "";
+let fichaActual         = null;
+
+const PDF_FINANCIAMIENTO = { oferta: "", descuentos: "" };
+
+function abrirPdfFinanciamiento(tipo) {
+  const url = PDF_FINANCIAMIENTO[tipo];
+  if (!url || url.trim() === "") {
+    mostrarToast("Link de " + tipo + " aún no configurado.", "info");
+    return;
+  }
+  window.open(url.replace("/view", "/preview"), "_blank");
+}
 
 // ==============================
-// CARGA INICIAL DE MODELOS Y PRECIOS
+// CARGA INICIAL
 // ==============================
 window.onload = async () => {
-  // Cargar modelos al selector
+  aplicarModoOscuroDesdeStorage();
+
+  // Migración v1 → v2
+  try {
+    const v1raw = localStorage.getItem("hondago_leads_v1");
+    const v2raw = localStorage.getItem("hondago_leads_v2");
+    if (v1raw && (!v2raw || v2raw === "[]")) {
+      const leadsV1 = JSON.parse(v1raw) || [];
+      if (leadsV1.length > 0) {
+        const adaptados = leadsV1.map((l, i) => ({
+          id:       l.id       || ("ld_" + Date.now().toString(36) + i),
+          dateISO:  l.dateISO  || l.fecha  || new Date().toISOString(),
+          name:     l.name     || l.nombre || "",
+          phone:    l.phone    || l.telefono || "",
+          phoneRaw: l.phoneRaw || l.telefono || "",
+          model:    l.model    || l.modelo  || "",
+          version:  l.version  || "",
+          price:    l.price    || l.precio  || "",
+          status:   l.status   || "nuevo",
+          notas:    l.notas    || [],
+          fichaUrl: l.fichaUrl || "",
+        }));
+        localStorage.setItem("hondago_leads_v2", JSON.stringify(adaptados));
+      }
+    }
+  } catch(e) {}
+
+  // Cargar catálogo desde Firestore + JSON
+  try {
+    const resp = await fetch("json/precios.json");
+    const data = await resp.json();
+    const baseModelos = data.modelos || [];
+
+    let firestoreOverrides = {};
+    try {
+      const snap = await db.collection("catalogo_admin").get();
+      snap.forEach((doc) => { firestoreOverrides[doc.id] = doc.data(); });
+    } catch (_) {}
+
+    try {
+      const finSnap = await db.collection("config").doc("financiamiento").get();
+      if (finSnap.exists) {
+        const fin = finSnap.data();
+        if (fin.oferta)     PDF_FINANCIAMIENTO.oferta     = fin.oferta;
+        if (fin.descuentos) PDF_FINANCIAMIENTO.descuentos = fin.descuentos;
+      }
+    } catch (_) {}
+
+    catalogoModelos = baseModelos.map((m) => {
+      const fs = firestoreOverrides[m.nombre];
+      if (!fs) return m;
+      return { ...m, versiones: fs.versiones || m.versiones, fichas: fs.fichas || m.fichas || {} };
+    });
+  } catch (e) {
+    console.error("Error cargando catálogo:", e);
+    mostrarToast("Error cargando catálogo", "error");
+    return;
+  }
+
   const selectModelo = document.getElementById("modelo");
-  Object.keys(hondaData).forEach((modelo) => {
-    const option = document.createElement("option");
-    option.value = modelo;
-    option.textContent = modelo;
-    selectModelo.appendChild(option);
+  catalogoModelos.forEach((m) => {
+    const op = document.createElement("option");
+    op.value = m.nombre; op.textContent = m.nombre;
+    selectModelo.appendChild(op);
   });
 
-  // Cargar precios desde JSON externo
-  try {
-    const response = await fetch("json/precios.json");
-    precios = await response.json();
-  } catch (error) {
-    console.error("Error cargando precios:", error);
-  }
+  updateLeadCounter();
+  cargarLeadsDesdeFirestore();
 };
 
 // ==============================
-// CAMBIO DE VERSIÓN/MODELO
+// VEHÍCULOS
 // ==============================
 function cargarVersiones() {
-  const modelo = document.getElementById("modelo").value;
+  const nombreModelo  = document.getElementById("modelo").value;
   const selectVersion = document.getElementById("version");
-
-  // Limpia y deja placeholder
   selectVersion.innerHTML = '<option value="">--Selecciona versión--</option>';
+  document.getElementById("info-modelo").innerHTML = "";
+  document.getElementById("imagen").src = "";
+  const btnFicha = document.getElementById("btn-ficha");
+  const btnEnv   = document.getElementById("btn-enviar");
+  if (btnFicha) btnFicha.style.display = "none";
+  if (btnEnv)   btnEnv.disabled = true;
+  modeloSeleccionado = ""; versionSeleccionada = ""; precioSeleccionado = ""; fichaActual = null;
+  if (!nombreModelo) return;
+
+  const modelo = catalogoModelos.find((m) => m.nombre === nombreModelo);
   if (!modelo) return;
+  fichaActual = modelo.fichas || null;
 
-  // 1) Origen de versiones: a partir de las claves del JSON de precios (si existe),
-  //    y si no, del arreglo hondaData[modelo] como respaldo.
-  let versiones = [];
-  if (precios && precios[modelo]) {
-    versiones = Object.keys(precios[modelo]);
-  } else {
-    versiones = hondaData[modelo] || [];
-  }
+  const por2026 = modelo.versiones.filter((v) => v.año === 2026);
+  const por2025 = modelo.versiones.filter((v) => v.año === 2025);
 
-  // 2) Separamos por año: 2026 vs (todo lo demás = 2025/previo).
-  const is2026 = (v) => /\b2026\b/.test(v);
-  const v2026 = versiones
-    .filter(is2026)
-    .sort((a, b) => a.localeCompare(b, "es"));
-  const v2025 = versiones
-    .filter((v) => !is2026(v))
-    .sort((a, b) => a.localeCompare(b, "es"));
-
-  // Utilidad: agrega un <optgroup> con opciones
-  const addGroup = (label, arr, year) => {
+  const addGroup = (label, arr) => {
     if (!arr.length) return;
     const og = document.createElement("optgroup");
     og.label = label;
-    arr.forEach((val) => {
+    arr.forEach((v) => {
       const op = document.createElement("option");
-      op.value = val; // Importante: value conserva el nombre con año (p.ej. "Turbo Plus 2026")
-      // Texto visible sin el año al final (ej. "Turbo Plus")
-      const display = val.replace(/\s20\d{2}\b/g, "");
-      op.textContent = display;
+      op.value = JSON.stringify({ nombre: v.nombre, precio: v.precio, tipo: v.tipo, año: v.año });
+      op.textContent = v.nombre + " " + v.año;
       og.appendChild(op);
     });
     selectVersion.appendChild(og);
   };
+  addGroup("Versiones 2026", por2026);
+  addGroup("Versiones 2025", por2025);
 
-  // 3) Pintamos grupos: primero 2026 y luego 2025
-  addGroup("Versiones 2026", v2026, 2026);
-  addGroup("Versiones 2025", v2025, 2025);
-
-  // 4) Imagen y verificación como tenías
-  actualizarImagen(modelo);
-  verificarCargado();
-}
-
-function actualizarImagen(modelo) {
   const imagen = document.getElementById("imagen");
-  const newSrc = `img/${modelo.toLowerCase()}.png`;
-
-  imagen.onload = () => {
-    imagenSeleccionada = imagen.src;
-    verificarCargado();
-  };
-
-  imagen.src = newSrc;
-  imagen.alt = modelo;
+  imagen.src = modelo.imagen || ("img/" + nombreModelo.toLowerCase() + ".png");
+  imagen.alt = nombreModelo;
 }
 
 function actualizarPrecio() {
-  const modelo = document.getElementById("modelo").value;
-  const version = document.getElementById("version").value;
-  const info = document.getElementById("info-modelo");
-
-  if (modelo && version) {
-    const precio = precios[modelo]?.[version] || "Precio no disponible";
-    info.textContent = `Precio: ${precio}`;
-    modeloSeleccionado = modelo;
-    versionSeleccionada = version;
-    precioSeleccionado = precio;
-  } else {
-    info.textContent = "";
-  }
-
-  verificarCargado();
-}
-
-function verificarCargado() {
-  const modelo = document.getElementById("modelo").value;
-  const version = document.getElementById("version").value;
-  const imagen = document.getElementById("imagen");
-  const boton = document.getElementById("btn-generar");
-  const todoListo =
-    modelo && version && imagen.complete && imagen.naturalHeight !== 0;
-  boton.disabled = !todoListo;
-}
-
-// ==============================
-// GENERAR PDF DE FICHA
-// ==============================
-function generarPDF() {
-  const modelo = document.getElementById("modelo").value;
-  const version = document.getElementById("version").value;
-  const imagen = document.getElementById("imagen");
-  const boton = document.getElementById("btn-generar");
-  const precio = precios[modelo]?.[version] || "Precio no disponible";
-
-  if (!modelo || !version) {
-    alert("Por favor selecciona un modelo y una versión.");
+  const rawVal   = document.getElementById("version").value;
+  const info     = document.getElementById("info-modelo");
+  const btnEnv   = document.getElementById("btn-enviar");
+  const btnFicha = document.getElementById("btn-ficha");
+  if (!rawVal) {
+    info.innerHTML = "";
+    if (btnEnv)   btnEnv.disabled = true;
+    if (btnFicha) btnFicha.style.display = "none";
     return;
   }
+  let vData;
+  try { vData = JSON.parse(rawVal); } catch { return; }
 
-  // Desactiva el botón mientras genera el PDF
-  boton.disabled = true;
+  modeloSeleccionado  = document.getElementById("modelo").value;
+  versionSeleccionada = vData.nombre + " " + vData.año;
+  precioSeleccionado  = "$" + Number(vData.precio).toLocaleString("es-MX");
 
-  const exportar = () => {
-    document.getElementById("selector-menu").style.display = "none";
-    document.querySelector(".tab-bar").style.display = "none";
-    document.getElementById("qr-contacto").style.display = "block";
+  info.innerHTML =
+    '<span class="precio-label">Precio de lista</span>' +
+    '<span class="precio-valor">' + precioSeleccionado + '</span>' +
+    (vData.tipo === "hev" ? '<span class="badge-hev">⚡ HEV</span>' : "");
 
-    const container = document.createElement("div");
-    container.style.backgroundColor = "#fff";
-    container.style.padding = "20px";
-    container.style.textAlign = "center";
-    container.style.maxWidth = "550px";
-    container.style.margin = "0 auto";
+  if (btnEnv) btnEnv.disabled = false;
 
-    const logo = document.getElementById("logo-vehiculo").cloneNode(true);
-    logo.style.maxWidth = "150px";
-    logo.style.margin = "0 auto 20px";
-    container.appendChild(logo);
-
-    const infoBlock = document.createElement("div");
-    infoBlock.innerHTML = `
-      <h2 style="margin: 10px 0;">${modelo}</h2>
-      <p><strong>Versión:</strong> ${version}</p>
-      <p><strong>Precio:</strong> ${precio}</p>
-    `;
-    container.appendChild(infoBlock);
-
-    const imagenClone = new Image();
-    imagenClone.src = imagen.src;
-    imagenClone.alt = imagen.alt;
-    imagenClone.onload = () => {
-      imagenClone.style.maxWidth = "90%";
-      imagenClone.style.height = "auto";
-      imagenClone.style.display = "block";
-      imagenClone.style.margin = "20px auto 0";
-
-      container.appendChild(imagenClone);
-
-      html2pdf()
-        .set({
-          margin: 10,
-          filename: `${modelo}_${version}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: {},
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(container)
-        .save()
-        .then(() => {
-          document.getElementById("selector-menu").style.display = "block";
-          document.querySelector(".tab-bar").style.display = "flex";
-          document.getElementById("qr-contacto").style.display = "none";
-          verificarCargado();
-        });
-    };
-  };
-
-  // Esperar a que la imagen original cargue antes de clonar
-  if (!imagen.complete || imagen.naturalHeight === 0) {
-    imagen.onload = () => exportar();
-  } else {
-    exportar();
+  if (fichaActual && btnFicha) {
+    const tipoVer    = vData.tipo || "gasolina";
+    const tieneFicha = tipoVer in fichaActual;
+    const linkFicha  = fichaActual[tipoVer] || "";
+    if (tieneFicha) {
+      btnFicha.style.display = "block";
+      btnFicha.dataset.url   = linkFicha;
+      btnFicha.dataset.tipo  = tipoVer;
+      btnFicha.textContent   = linkFicha.trim() !== "" ? "📄 Enviar ficha técnica" : "📄 Ficha técnica (sin configurar)";
+      btnFicha.style.opacity = linkFicha.trim() !== "" ? "1" : "0.6";
+    } else {
+      btnFicha.style.display = "none";
+    }
   }
 }
 
-// =====================================
-// Helper: normaliza el número para wa.me
-// =====================================
+function abrirFichaTecnica() {
+  const btn = document.getElementById("btn-ficha");
+  const url = (btn ? btn.dataset.url : "") || "";
+  if (!url || url.trim() === "") {
+    mostrarToast("Configura el link en Admin → Catálogo", "info"); return;
+  }
+  const telefono = (document.getElementById("telefono-cliente").value || "").trim();
+  const nombre   = (document.getElementById("nombre-cliente").value   || "").trim();
+  if (telefono) {
+    const numeroWa = buildWaNumber(telefono, "");
+    const texto    = (nombre ? "Hola *" + nombre + "*, a" : "A") +
+      "quí te comparto la ficha técnica del *" + modeloSeleccionado + " " + versionSeleccionada + "*:\n\n" + url;
+    const waUrl = "https://wa.me/" + numeroWa + "?text=" + encodeURIComponent(texto);
+    const w = window.open(waUrl, "_blank"); if (!w) location.href = waUrl;
+  } else {
+    window.open(url.replace("/view", "/preview"), "_blank");
+  }
+}
+
+// ==============================
+// WHATSAPP
+// ==============================
 function buildWaNumber(phoneRaw, codPaisRaw) {
-  // Limpia: deja dígitos y + para detección
   let p = (phoneRaw || "").trim().replace(/[^\d+]/g, "");
-
-  // Caso 1: usuario ya puso formato internacional "+.."
-  if (p.startsWith("+")) {
-    return p.slice(1).replace(/\D/g, ""); // wa.me no acepta el '+'
-  }
-
-  // Caso 2: usuario puso "00.."
-  if (p.startsWith("00")) {
-    return p.slice(2).replace(/\D/g, "");
-  }
-
-  // Caso 3: solo dígitos
+  if (p.startsWith("+"))  return p.slice(1).replace(/\D/g, "");
+  if (p.startsWith("00")) return p.slice(2).replace(/\D/g, "");
   let digits = p.replace(/\D/g, "");
-
-  // Si trae más de 10, asumimos que ya incluye código país
   if (digits.length > 10) return digits;
-
-  // Si son 10 dígitos, asumimos número local y anteponemos código país
-  let cc = (codPaisRaw || "+52").replace(/[^\d]/g, "") || "52";
-  return cc + digits;
+  return ((codPaisRaw || "+52").replace(/[^\d]/g, "") || "52") + digits;
 }
 
-// =====================================
-// Helper: abre WhatsApp con fallback anti-popup
-// =====================================
-function openWhatsApp(numeroWa, mensaje, delayMs = 0) {
-  const url = `https://wa.me/${numeroWa}?text=${mensaje}`;
-  const openFn = () => {
-    const win = window.open(url, "_blank");
-    if (!win) window.location.href = url; // fallback si bloquean popups
-  };
-  if (delayMs > 0) setTimeout(openFn, delayMs);
-  else openFn();
-}
-// ==============================
-// LEADS (localStorage) + búsqueda + tamaño página + paginación + selección/borrado
-// ==============================
-const LEADS_KEY = "hondago_leads_v1";
-
-// --- Generar ID para cada lead nuevo ---
-function generateLeadId() {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return (
-      "ld_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-    );
-  }
-}
-
-// --- Base de almacenamiento ---
-function getLeads() {
-  try {
-    return JSON.parse(localStorage.getItem(LEADS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-function setLeads(arr) {
-  localStorage.setItem(LEADS_KEY, JSON.stringify(arr));
-}
-function saveLead(lead) {
-  if (!lead.id) lead.id = generateLeadId(); // asegura id en nuevos leads
-  const leads = getLeads();
-  leads.push(lead);
-  setLeads(leads);
-  updateLeadCounter();
-  // Si quieres ver el nuevo lead arriba cuando estás en la vista de Leads:
-  // leadPage = 1; renderLeadsList();
-}
-function updateLeadCounter() {
-  const el = document.getElementById("lead-count");
-  if (el) el.textContent = getLeads().length;
-}
-
-// --- Estado de UI ---
-let leadPage = 1; // página actual
-let leadUI = {
-  search: "", // término de búsqueda (lowercase)
-  pageSize: 50, // 25 / 50 / 100 (control en HTML)
-};
-
-// --- Setters de toolbar ---
-function setLeadSearch(val) {
-  leadUI.search = String(val || "")
-    .trim()
-    .toLowerCase();
-  leadPage = 1;
-  renderLeadsList();
-}
-function setLeadPageSize(val) {
-  const n = parseInt(val, 10) || 50;
-  leadUI.pageSize = Math.max(10, Math.min(n, 500));
-  leadPage = 1;
-  renderLeadsList();
-}
-
-// --- Helpers de paginación ---
-function calcLeadPages(total) {
-  const size = leadUI.pageSize || 50;
-  return Math.max(1, Math.ceil(total / size));
-}
-function nextLeadPage() {
-  const total = filterLeads(getLeads()).length;
-  const pages = calcLeadPages(total);
-  if (leadPage < pages) {
-    leadPage++;
-    renderLeadsList();
-  }
-}
-function prevLeadPage() {
-  if (leadPage > 1) {
-    leadPage--;
-    renderLeadsList();
-  }
-}
-
-// --- Filtro por término (nombre/teléfono/modelo/versión/precio) ---
-function filterLeads(leads) {
-  const q = leadUI.search;
-  if (!q) return leads;
-  return leads.filter((l) => {
-    const hay = [l.name, l.phoneRaw, l.model, l.version, l.price]
-      .map((x) => String(x || "").toLowerCase())
-      .join(" ");
-    return hay.includes(q);
-  });
-}
-
-// --- Render con filtro + paginación + checkboxes ---
-function renderLeadsList() {
-  const cont = document.getElementById("lead-list");
-  if (!cont) return;
-
-  // 1) Datos + filtro
-  const all = getLeads();
-  updateLeadCounter();
-  const filtered = filterLeads(all);
-
-  // 2) Orden (más recientes primero)
-  const sorted = filtered
-    .slice()
-    .sort((a, b) => (b.dateISO || "").localeCompare(a.dateISO || ""));
-
-  // 3) Paginación
-  const size = leadUI.pageSize || 50;
-  const total = sorted.length;
-  const pages = calcLeadPages(total);
-  if (leadPage > pages) leadPage = pages;
-
-  const start = (leadPage - 1) * size;
-  const pageItems = sorted.slice(start, start + size);
-
-  // 4) Pintar
-  if (!pageItems.length) {
-    cont.innerHTML = `<p style="text-align:center;color:#777;margin:12px 0">
-      ${total ? "No hay resultados para tu búsqueda." : "Aún no hay leads."}
-    </p>`;
-  } else {
-    const rows = pageItems
-      .map(
-        (l) => `
-      <tr>
-        <td><input type="checkbox" class="lead-check" data-id="${l.id}"></td>
-        <td>${formatDateTime(l.dateISO)}</td>
-        <td>${escapeHtml(l.name || "")}</td>
-        <td>${escapeHtml(l.phoneRaw || "")}</td>
-        <td>${escapeHtml(l.model || "")}</td>
-        <td>${escapeHtml(l.version || "")}</td>
-        <td>${escapeHtml(l.price || "")}</td>
-      </tr>
-    `
-      )
-      .join("");
-
-    cont.innerHTML = `
-      <div class="lead-table">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:1%;white-space:nowrap;">
-                <input type="checkbox" id="lead-check-all" onclick="toggleLeadSelectAll(this)">
-              </th>
-              <th>Fecha</th><th>Nombre</th><th>Teléfono</th>
-              <th>Modelo</th><th>Versión</th><th>Precio</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  // 5) Indicador de página
-  const info = document.getElementById("lead-page-info");
-  if (info) info.textContent = `Página ${total ? leadPage : 1} / ${pages}`;
-
-  // 6) Estado inicial de la barra de selección
-  updateLeadSelectionUI();
-}
-
-// --- Selección masiva (página visible) ---
-function toggleLeadSelectAll(master) {
-  document
-    .querySelectorAll("#lead-list .lead-check")
-    .forEach((ch) => (ch.checked = master.checked));
-  updateLeadSelectionUI();
-}
-
-// --- Muestra/oculta barra de selección + contador ---
-function updateLeadSelectionUI() {
-  const checks = Array.from(
-    document.querySelectorAll("#lead-list .lead-check")
-  );
-  const selected = checks.filter((c) => c.checked).length;
-
-  const bar = document.getElementById("lead-selection");
-  const count = document.getElementById("lead-selected-count");
-
-  if (bar) bar.classList.toggle("show", selected > 0);
-  if (count) count.textContent = selected;
-}
-
-// --- Borrar seleccionados (página visible) ---
-function deleteSelectedLeads() {
-  const checked = Array.from(
-    document.querySelectorAll("#lead-list .lead-check:checked")
-  );
-  if (!checked.length) {
-    alert("Selecciona al menos un lead.");
-    return;
-  }
-  if (!confirm(`¿Eliminar ${checked.length} lead(s) seleccionado(s)?`)) return;
-
-  const idsToDelete = new Set(checked.map((ch) => ch.getAttribute("data-id")));
-  const leads = getLeads();
-  const remaining = leads.filter((l) => !idsToDelete.has(l.id));
-  setLeads(remaining);
-
-  const pages = calcLeadPages(remaining.length);
-  if (leadPage > pages) leadPage = pages;
-
-  renderLeadsList();
-  updateLeadCounter();
-  updateLeadSelectionUI();
-  alert("Lead(s) eliminado(s).");
-}
-
-// --- Exportar CSV (todos) ---
-function exportLeadsCSV() {
-  const leads = getLeads();
-  if (!leads.length) {
-    alert("No hay leads guardados.");
-    return;
-  }
-
-  const headers = [
-    "Fecha",
-    "Nombre",
-    "Teléfono (wa.me)",
-    "Teléfono ingresado",
-    "Código país",
-    "Modelo",
-    "Versión",
-    "Precio",
-  ];
-  const rows = leads.map((l) => [
-    l.dateISO || "",
-    l.name || "",
-    l.phone || "",
-    l.phoneRaw || "",
-    l.countryCode || "",
-    l.model || "",
-    l.version || "",
-    l.price || "",
-  ]);
-
-  const toCsv = (arr) =>
-    arr
-      .map((r) =>
-        r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
-
-  const csv = [headers, ...rows];
-  const blob = new Blob([toCsv(csv)], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `leads-hondago-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-// --- (Opcional) borrar todo ---
-function clearLeads() {
-  if (confirm("¿Borrar todos los leads guardados?")) {
-    localStorage.removeItem(LEADS_KEY);
-    leadPage = 1;
-    renderLeadsList();
-    alert("Leads borrados.");
-  }
-}
-
-// --- Utilidades ---
-function escapeHtml(s) {
-  return String(s).replace(
-    /[&<>"']/g,
-    (m) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[
-        m
-      ])
-  );
-}
-function formatDateTime(iso) {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return "";
-  }
-}
-
-// --- Delegación de eventos para actualizar barra al marcar checks ---
-document.addEventListener("DOMContentLoaded", () => {
-  const leadList = document.getElementById("lead-list");
-  if (leadList) {
-    leadList.addEventListener("change", (e) => {
-      if (e.target.classList && e.target.classList.contains("lead-check")) {
-        updateLeadSelectionUI();
-      }
-      if (e.target.id === "lead-check-all") {
-        updateLeadSelectionUI();
-      }
-    });
-  }
-});
-
-// =====================================
-// Enviar WhatsApp (con nombre opcional + guardar lead + abrir WA)
-// =====================================
 function enviarACliente() {
-  const numeroInput = document.getElementById("telefono-cliente");
-  const nombreInput = document.getElementById("nombre-cliente"); // opcional si lo agregaste
-  const codPaisInput = document.getElementById("cod-pais"); // opcional
-
-  const numeroRaw = (numeroInput?.value || "").trim();
-  const nombre = (nombreInput?.value || "").trim();
-  const codPais = (codPaisInput?.value || "").trim();
-
-  if (!numeroRaw) {
-    alert("Ingresa un número válido.");
-    return;
+  const telefonoRaw = (document.getElementById("telefono-cliente").value || "").trim();
+  const nombre      = (document.getElementById("nombre-cliente").value   || "").trim();
+  if (!telefonoRaw) { mostrarToast("Ingresa un número válido", "error"); return; }
+  if (!modeloSeleccionado || !versionSeleccionada) {
+    mostrarToast("Selecciona modelo y versión primero", "error"); return;
   }
-  if (!modeloSeleccionado || !versionSeleccionada || !precioSeleccionado) {
-    alert("Faltan datos del vehículo seleccionado.");
-    return;
-  }
+
+  const btnFicha = document.getElementById("btn-ficha");
+  const linkFicha = (btnFicha && btnFicha.style.display !== "none" && btnFicha.dataset.url)
+    ? btnFicha.dataset.url.trim() : "";
 
   const saludo = nombre
-    ? `👋 Hola *${nombre}*, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.`
-    : `👋 Hola, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.`;
+    ? ["\u{1F44B}", " Hola *", nombre, "*, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*."].join("")
+    : "\u{1F44B} Hola, soy *Israel Ortiz*, asesor de ventas en *Honda Montejo*.";
 
-  const texto = `${saludo}
+  let lineas = [
+    saludo, "",
+    "\u{1F697} Te comparto la información del vehículo de tu interés:",
+    "\u{1F539} Modelo: *" + modeloSeleccionado + "*",
+    "\u{1F538} Versión: *" + versionSeleccionada + "*",
+    "\u{1F4B0} Precio: *" + precioSeleccionado + "*",
+  ];
+  if (linkFicha !== "") {
+    lineas.push(""); lineas.push("\u{1F4C4} *Ficha técnica:*"); lineas.push(linkFicha);
+  }
+  lineas = lineas.concat([
+    "", "\u{1F4DE} Estoy a tus órdenes para asesorarte y resolver cualquier duda.",
+    "", "\u2709\uFE0F Correo: fortiz.hondamontejo@gmail.com",
+    "\u{1F4D8} Facebook: fb.com/honda.israelortiz",
+    "\u{1F4CD} Honda Montejo, Mérida",
+  ]);
 
-🚗 Te comparto la ficha del vehículo:
-🔹 Modelo: *${modeloSeleccionado}*
-🔸 Versión: *${versionSeleccionada}*
-💰 Precio: *${precioSeleccionado}*
+  const texto    = lineas.join("\n");
+  const numeroWa = buildWaNumber(telefonoRaw, "");
 
-📞 Si tienes alguna duda o deseas agendar una cita, estoy a tus órdenes para asesorarte.
-
-✉️ Correo: fortiz.hondamontejo@gmail.com
-📘 Facebook: fb.com/honda.israelortiz
-📍 Ubicación: Honda Montejo, Mérida`;
-
-  const mensaje = encodeURIComponent(texto);
-
-  // Normaliza número para wa.me (SOLO dígitos, con código país)
-  const numeroWa = buildWaNumber(numeroRaw, codPais);
-
-  // Guarda el lead localmente
   saveLead({
-    dateISO: new Date().toISOString(),
-    name: nombre,
-    phone: numeroWa, // listo para wa.me (solo dígitos)
-    phoneRaw: numeroRaw, // como lo tecleó el usuario
-    countryCode: (codPais || "").replace(/[^\d]/g, ""),
-    model: modeloSeleccionado,
-    version: versionSeleccionada,
-    price: precioSeleccionado,
+    id: generateLeadId(), dateISO: new Date().toISOString(),
+    name: nombre, phone: numeroWa, phoneRaw: telefonoRaw,
+    model: modeloSeleccionado, version: versionSeleccionada,
+    price: precioSeleccionado, fichaUrl: linkFicha, status: "nuevo", notas: [],
   });
+  mostrarToast("Lead guardado ✅", "success");
 
-  // Abre WhatsApp (pequeño delay para UX y evitar bloqueos de pop-up)
-  openWhatsApp(numeroWa, mensaje, 200);
+  const textoCodificado = texto.split("").map(function(c) {
+    const code = c.codePointAt(0);
+    if (code > 0x00FF) return c;
+    if (" \t\n\r".includes(c)) return encodeURIComponent(c);
+    if ("!#$&'()*+,/:;=?@[]".includes(c)) return encodeURIComponent(c);
+    return c;
+  }).join("");
+  const waUrl = "https://wa.me/" + numeroWa + "?text=" + textoCodificado;
+  const w = window.open(waUrl, "_blank"); if (!w) location.href = waUrl;
 }
 
 // ==============================
-// CONTROL DE TABS PRINCIPALES
+// TABS Y NAVEGACIÓN
 // ==============================
 function cambiarTab(tabId) {
-  if (tabId === "financiamiento") {
-    applyPdfVersionParam();
-  }
-  // Oculta todas las secciones de tabs
-  document
-    .querySelectorAll(".tab-section")
-    .forEach((sec) => sec.classList.remove("active"));
-  // Desactiva todos los botones del menú inferior
-  document
-    .querySelectorAll(".tab-bar button")
-    .forEach((btn) => btn.classList.remove("active"));
-  // Muestra el tab seleccionado y resalta el botón activo
+  document.querySelectorAll(".tab-section").forEach((s) => s.classList.remove("active"));
+  document.querySelectorAll(".tab-bar button").forEach((b) => b.classList.remove("active"));
   document.getElementById(tabId).classList.add("active");
-  document.getElementById(`tab-${tabId}`).classList.add("active");
-
-  // Si es 'mas', oculta las subsecciones de 'Más'
+  document.getElementById("tab-" + tabId).classList.add("active");
   if (tabId === "mas") {
-    document
-      .querySelectorAll(".sub-mas")
-      .forEach((sub) => (sub.style.display = "none"));
-    document.getElementById("mas").scrollIntoView({ behavior: "smooth" });
+    document.querySelectorAll(".sub-mas").forEach((s) => (s.style.display = "none"));
+    document.getElementById("mas").querySelector(".menu-mas").style.display = "";
   }
 }
 
-// Tab activo por defecto + contador de leads al cargar
-document.addEventListener("DOMContentLoaded", () => {
-  // Tab por defecto y contador de leads
-  cambiarTab("vehiculos");
-  updateLeadCounter();
-
-  // ===== Lista fija de colaboradores (autocompletar en el modal) =====
-  const colaboradores = ["Israel"];
-  const datalist = document.getElementById("colaboradores");
-  if (datalist) {
-    datalist.innerHTML = colaboradores
-      .map((n) => `<option value="${n}">`)
-      .join("");
-  }
-});
-
-// ==============================
-// SUBSECCIONES EN "MÁS"
-// ==============================
 function mostrarSubseccionMas(subId) {
-  // Oculta todas las subsecciones
-  document
-    .querySelectorAll(".sub-mas")
-    .forEach((sub) => (sub.style.display = "none"));
-
+  document.getElementById("mas").querySelector(".menu-mas").style.display = "none";
+  document.querySelectorAll(".sub-mas").forEach((s) => (s.style.display = "none"));
   if (subId === "calendario") {
     document.getElementById("sub-mas-calendario").style.display = "block";
-    if (typeof calendar !== "undefined") calendar.render(); // asegura render
+    if (typeof calendar !== "undefined" && calendar) calendar.render();
+  } else if (subId === "leads") {
+    document.getElementById("sub-mas-leads").style.display = "block";
+    const sizeSel  = document.getElementById("lead-size");
+    const searchIn = document.getElementById("lead-search");
+    if (sizeSel)  sizeSel.value  = String(leadUI.pageSize || 50);
+    if (searchIn) searchIn.value = leadUI.search || "";
+    renderLeadsList();
   } else if (subId === "creditos") {
     document.getElementById("sub-mas-creditos").style.display = "block";
   } else if (subId === "actualizacion") {
     document.getElementById("sub-mas-actualizacion").style.display = "block";
-  } else if (subId === "leads") {
-    document.getElementById("sub-mas-leads").style.display = "block";
-
-    // ⬇️ Sincroniza toolbar (tamaño de página y búsqueda) con el estado actual
-    const sizeSel = document.getElementById("lead-size");
-    const searchInp = document.getElementById("lead-search");
-    if (sizeSel) sizeSel.value = String(leadUI.pageSize || 50);
-    if (searchInp) searchInp.value = leadUI.search || "";
-
-    // Renderiza la lista (aplica filtro + paginación con los valores sincronizados)
-    renderLeadsList();
   }
 }
 
-// ==============================
-// CALENDARIO DE GUARDIAS (FULLCALENDAR + FIRESTORE)
-// ==============================
-let calendar;
-
-document.addEventListener("DOMContentLoaded", function () {
-  const calendarEl = document.getElementById("calendario-guardias");
-  if (!calendarEl) return;
-
-  calendar = new FullCalendar.Calendar(calendarEl, {
-    locale: "es",
-    initialView: "dayGridMonth",
-    height: "auto",
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek,timeGridDay",
-    },
-    events: [],
-
-    eventContent: function (arg) {
-      return { html: arg.event.title };
-    },
-
-    dateClick: function (info) {
-      abrirModal(info.dateStr);
-    },
-
-    eventClick: function (info) {
-      const evento = info.event;
-      document.getElementById("idGuardia").value = evento.id;
-      document.getElementById("nombreGuardia").value = extraerNombre(
-        evento.title
-      );
-      document.getElementById("turnoGuardia").value = evento.title.includes(
-        "AM"
-      )
-        ? "am"
-        : "pm";
-      fechaSeleccionada = evento.startStr.split("T")[0];
-      abrirModal(fechaSeleccionada, true, evento);
-    },
-  });
-
-  // No render aquí; se hace cuando abres la sub-sección calendario
-  // calendar.render();
-});
-
-function cargarGuardiasDesdeFirestore() {
-  db.collection("guardias").onSnapshot((snapshot) => {
-    if (!calendar) return;
-
-    calendar.getEvents().forEach((e) => e.remove());
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      let titleVisual = "";
-      let colorVisual = data.color || "#007bff";
-
-      if (data.tipo === "guardia") {
-        const nombreColaborador = extraerNombre(data.title);
-        const isAM = data.title.includes("AM");
-        const icono = isAM ? "☀️" : "🌙";
-        colorVisual = data.color || (isAM ? "#FFA500" : "#007bff");
-        titleVisual = `${icono} <span class="badge-colaborador">${nombreColaborador}</span>`;
-      }
-
-      if (data.tipo === "recordatorio") {
-        titleVisual = `🛎️ <span class="badge-colaborador">${
-          data.titulo || ""
-        }</span>`;
-        colorVisual = data.color || "#4CAF50";
-      }
-
-      calendar.addEvent({
-        id: doc.id,
-        title: titleVisual,
-        start: data.start,
-        end: data.end,
-        color: colorVisual,
-        display: "auto",
-      });
-    });
-  });
+function volverMenuMas() {
+  document.querySelectorAll(".sub-mas").forEach((s) => (s.style.display = "none"));
+  document.getElementById("mas").querySelector(".menu-mas").style.display = "";
 }
-cargarGuardiasDesdeFirestore();
 
 // ==============================
-// MODAL GUARDIAS (abrir/cerrar centrado, bloqueando scroll)
+// LEADS — STORAGE
 // ==============================
-let fechaSeleccionada = null;
-let lastScrollY = 0;
+const LEADS_KEY = "hondago_leads_v2";
 
-function abrirModal(fechaStr, modoEdicion = false, eventoData = null) {
-  fechaSeleccionada = fechaStr;
+function generateLeadId() {
+  try { return crypto.randomUUID(); }
+  catch { return "ld_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+}
+function getLeads() {
+  try { return JSON.parse(localStorage.getItem(LEADS_KEY) || "[]"); } catch { return []; }
+}
+function setLeads(arr) { localStorage.setItem(LEADS_KEY, JSON.stringify(arr)); }
 
-  const modal = document.getElementById("modalGuardia");
-  modal.style.display = "flex";
-  modal.focus();
+function saveLead(lead) {
+  if (!lead.id)     lead.id     = generateLeadId();
+  if (!lead.status) lead.status = "nuevo";
+  if (!lead.notas)  lead.notas  = [];
+  const leads = getLeads(); leads.push(lead); setLeads(leads);
+  updateLeadCounter();
+  db.collection("leads").doc(lead.id).set(lead).catch(() => {});
+}
 
-  // Bloquea scroll, guardando posición
-  lastScrollY = window.scrollY || window.pageYOffset;
-  document.body.style.top = `-${lastScrollY}px`;
-  document.body.classList.add("modal-open");
+function sincronizarLeadUpdateFirestore(lead) {
+  db.collection("leads").doc(lead.id).set(lead).catch(() => {});
+}
 
-  // Modo edición vs nuevo
-  if (modoEdicion && eventoData) {
-    document.getElementById("idGuardia").value = eventoData.id;
-    document.getElementById("nombreGuardia").value = extraerNombre(
-      eventoData.title
+async function cargarLeadsDesdeFirestore() {
+  if (getLeads().length > 0) return;
+  try {
+    const snap = await db.collection("leads").orderBy("dateISO", "desc").get();
+    if (snap.empty) return;
+    const remotos = []; snap.forEach((doc) => remotos.push(doc.data()));
+    setLeads(remotos); updateLeadCounter();
+    mostrarToast("Leads restaurados desde la nube ☁️", "info");
+  } catch (_) {}
+}
+
+function updateLeadCounter() {
+  const n = getLeads().length;
+  const el1 = document.getElementById("lead-count");
+  const el2 = document.getElementById("lead-count-badge");
+  if (el1) el1.textContent = n;
+  if (el2) el2.textContent = n;
+}
+
+// ==============================
+// LEADS — FILTROS Y PAGINACIÓN
+// ==============================
+let leadPage = 1;
+let leadUI   = { search: "", pageSize: 50, statusFilter: "" };
+
+function setLeadSearch(val)    { leadUI.search = String(val||"").trim().toLowerCase(); leadPage=1; renderLeadsList(); }
+function setLeadPageSize(val)  { leadUI.pageSize = Math.max(10,Math.min(parseInt(val,10)||50,500)); leadPage=1; renderLeadsList(); }
+function setLeadStatusFilter(btn, status) {
+  document.querySelectorAll(".status-chip").forEach((c) => c.classList.remove("active"));
+  btn.classList.add("active"); leadUI.statusFilter = status; leadPage=1; renderLeadsList();
+}
+function filterLeads(leads) {
+  let list = leads;
+  if (leadUI.statusFilter) list = list.filter((l) => (l.status||"nuevo") === leadUI.statusFilter);
+  if (leadUI.search) {
+    const q = leadUI.search;
+    list = list.filter((l) =>
+      [l.name,l.phoneRaw,l.model,l.version,l.price,l.status].map((x)=>String(x||"").toLowerCase()).join(" ").includes(q)
     );
-    document.getElementById("turnoGuardia").value = eventoData.title.includes(
-      "AM"
-    )
-      ? "am"
-      : "pm";
-    document.getElementById("tituloModalGuardia").textContent =
-      "Editar Guardia";
-    document.getElementById("iconModal").innerHTML = eventoData.title.includes(
-      "AM"
-    )
-      ? "☀️"
-      : "🌙";
-    document.getElementById("btnEliminarGuardia").style.display = "block";
-  } else {
-    document.getElementById("idGuardia").value = "";
-    document.getElementById("nombreGuardia").value = "";
-    document.getElementById("turnoGuardia").value = "am";
-    document.getElementById("tituloModalGuardia").textContent = "Nueva Guardia";
-    document.getElementById("iconModal").innerHTML = "👤";
-    document.getElementById("btnEliminarGuardia").style.display = "none";
   }
+  return list;
+}
+function calcLeadPages(total) { return Math.max(1, Math.ceil(total/(leadUI.pageSize||50))); }
+function nextLeadPage() { if (leadPage < calcLeadPages(filterLeads(getLeads()).length)) { leadPage++; renderLeadsList(); } }
+function prevLeadPage() { if (leadPage > 1) { leadPage--; renderLeadsList(); } }
 
-  // Focus al input nombre
-  setTimeout(() => document.getElementById("nombreGuardia").focus(), 10);
+// ==============================
+// LEADS — BADGES DE ESTADO
+// ==============================
+const STATUS_META = {
+  nuevo:       { label:"🆕 Nuevo",       color:"#007aff" },
+  contactado:  { label:"📞 Contactado",  color:"#ff9500" },
+  seguimiento: { label:"🔄 Seguimiento", color:"#5856d6" },
+  cita:        { label:"📅 Cita",        color:"#34aadc" },
+  vendido:     { label:"✅ Vendido",      color:"#30d158" },
+  descartado:  { label:"❌ Descartado",  color:"#8e8e93" },
+};
+function statusBadge(status) {
+  const m = STATUS_META[status] || STATUS_META["nuevo"];
+  return '<span class="status-badge" style="background:' + m.color + '20;color:' + m.color + ';border:1px solid ' + m.color + '40">' + m.label + '</span>';
 }
 
-function cerrarModal() {
-  const modal = document.getElementById("modalGuardia");
-  modal.style.display = "none";
-  document.getElementById("nombreGuardia").value = "";
-  document.getElementById("idGuardia").value = "";
+// ==============================
+// LEADS — RENDER CARDS
+// ==============================
+function renderLeadsList() {
+  const cont = document.getElementById("lead-list");
+  if (!cont) return;
+  updateLeadCounter();
+  const all      = getLeads();
+  const filtered = filterLeads(all);
+  const sorted   = filtered.slice().sort((a,b) => (b.dateISO||"").localeCompare(a.dateISO||""));
+  const size     = leadUI.pageSize || 50;
+  const total    = sorted.length;
+  const pages    = calcLeadPages(total);
+  if (leadPage > pages) leadPage = pages;
+  const pageItems = sorted.slice((leadPage-1)*size, leadPage*size);
 
-  // Restaura scroll
+  if (!pageItems.length) {
+    cont.innerHTML = '<p style="text-align:center;color:#777;margin:20px 0">' + (total ? "Sin resultados para tu búsqueda." : "Aún no hay leads registrados.") + '</p>';
+  } else {
+    cont.innerHTML = '<div class="lead-cards-list">' + pageItems.map((l) => {
+      const ultimaNota = l.notas && l.notas.length
+        ? '<p class="lead-card-nota">' + escapeHtml(l.notas[l.notas.length-1].texto) + '</p>' : "";
+      return '<div class="lead-card" onclick="abrirDetalleLead(\'' + l.id + '\')">'
+        + '<div class="lead-card-top"><div><span class="lead-card-name">' + escapeHtml(l.name||"Sin nombre") + '</span>' + statusBadge(l.status||"nuevo") + '</div>'
+        + '<span class="lead-card-date">' + formatDateTime(l.dateISO) + '</span></div>'
+        + '<div class="lead-card-mid"><span>🚗 ' + escapeHtml(l.model||"") + ' ' + escapeHtml(l.version||"") + '</span><span>💰 ' + escapeHtml(l.price||"") + '</span></div>'
+        + '<div class="lead-card-mid"><span>📱 ' + escapeHtml(l.phoneRaw||"") + '</span></div>'
+        + ultimaNota
+        + '<div class="lead-card-actions" onclick="event.stopPropagation()"><input type="checkbox" class="lead-check" data-id="' + l.id + '" onchange="updateLeadSelectionUI()"></div>'
+        + '</div>';
+    }).join("") + '</div>';
+  }
+  const info = document.getElementById("lead-page-info");
+  if (info) info.textContent = "Pág " + (total ? leadPage : 1) + " / " + pages;
+  updateLeadSelectionUI();
+}
+
+// ==============================
+// LEADS — SELECCIÓN MASIVA
+// ==============================
+function updateLeadSelectionUI() {
+  const checks   = Array.from(document.querySelectorAll("#lead-list .lead-check"));
+  const selected = checks.filter((c) => c.checked).length;
+  const bar   = document.getElementById("lead-selection");
+  const count = document.getElementById("lead-selected-count");
+  if (bar)   bar.classList.toggle("show", selected > 0);
+  if (count) count.textContent = selected;
+}
+
+function deleteSelectedLeads() {
+  const checked = Array.from(document.querySelectorAll("#lead-list .lead-check:checked"));
+  if (!checked.length) { mostrarToast("Selecciona al menos un lead", "info"); return; }
+  if (!confirm("¿Eliminar " + checked.length + " lead(s)?")) return;
+  const ids = new Set(checked.map((c) => c.getAttribute("data-id")));
+  setLeads(getLeads().filter((l) => !ids.has(l.id)));
+  ids.forEach((id) => db.collection("leads").doc(id).delete().catch(() => {}));
+  renderLeadsList(); updateLeadCounter();
+  mostrarToast("Lead(s) eliminado(s)", "success");
+}
+
+// ==============================
+// LEADS — DETALLE / CRM
+// ==============================
+let leadDetalleActual = null;
+
+function abrirDetalleLead(id) {
+  const lead = getLeads().find((l) => l.id === id);
+  if (!lead) return;
+  leadDetalleActual = lead;
+  document.getElementById("lead-detail-title").textContent = lead.name || "Lead";
+  document.getElementById("ld-fecha").textContent    = formatDateTime(lead.dateISO);
+  document.getElementById("ld-nombre").textContent   = lead.name    || "—";
+  document.getElementById("ld-telefono").textContent = lead.phoneRaw || "—";
+  document.getElementById("ld-tel-link").href        = "https://wa.me/" + lead.phone;
+  document.getElementById("ld-modelo").textContent   = lead.model   || "—";
+  document.getElementById("ld-version").textContent  = lead.version || "—";
+  document.getElementById("ld-precio").textContent   = lead.price   || "—";
+  document.getElementById("ld-status").value         = lead.status  || "nuevo";
+  document.getElementById("ld-lead-id").value        = id;
+  document.getElementById("ld-nota-input").value     = "";
+  renderNotasLog(lead);
+  document.getElementById("modalLead").style.display = "flex";
+  bloquearScroll();
+}
+
+function renderNotasLog(lead) {
+  const log = document.getElementById("ld-notas-log");
+  if (!lead.notas || !lead.notas.length) {
+    log.innerHTML = '<p class="notas-empty">Sin notas aún. Agrega la primera abajo 👇</p>'; return;
+  }
+  log.innerHTML = lead.notas.map((n, i) =>
+    '<div class="nota-item"><div class="nota-header"><span class="nota-fecha">' + formatDateTime(n.fecha) + '</span>'
+    + '<div class="nota-acciones">'
+    + '<button class="nota-btn" onclick="abrirEditarNota(\'' + lead.id + '\',' + i + ')"><span class="material-icons" style="font-size:16px">edit</span></button>'
+    + '<button class="nota-btn nota-btn-del" onclick="eliminarNota(\'' + lead.id + '\',' + i + ')"><span class="material-icons" style="font-size:16px">delete</span></button>'
+    + '</div></div><p class="nota-texto">' + escapeHtml(n.texto) + '</p></div>'
+  ).reverse().join("");
+}
+
+function guardarEstadoLead() {
+  const id     = document.getElementById("ld-lead-id").value;
+  const status = document.getElementById("ld-status").value;
+  const leads  = getLeads();
+  const idx    = leads.findIndex((l) => l.id === id);
+  if (idx === -1) return;
+  leads[idx].status = status; leadDetalleActual = leads[idx];
+  setLeads(leads); sincronizarLeadUpdateFirestore(leads[idx]);
+  renderLeadsList(); mostrarToast("Estado actualizado", "success");
+}
+
+function agregarNotaLead() {
+  const inputNota = document.getElementById("ld-nota-input");
+  const texto = (inputNota ? inputNota.value : "").trim();
+  if (!texto) { mostrarToast("Escribe algo antes de guardar", "info"); return; }
+  const id    = document.getElementById("ld-lead-id").value;
+  const leads = getLeads();
+  const idx   = leads.findIndex((l) => l.id === id);
+  if (idx === -1) return;
+  if (!leads[idx].notas) leads[idx].notas = [];
+  leads[idx].notas.push({ texto, fecha: new Date().toISOString() });
+  leadDetalleActual = leads[idx];
+  setLeads(leads);
+  if (inputNota) inputNota.value = "";
+  const leadFresh = getLeads().find((l) => l.id === id);
+  if (leadFresh) { leadDetalleActual = leadFresh; renderNotasLog(leadFresh); }
+  setTimeout(() => { sincronizarLeadUpdateFirestore(leads[idx]); renderLeadsList(); }, 0);
+  mostrarToast("Nota guardada ✅", "success");
+}
+
+function eliminarNota(leadId, idx) {
+  if (!confirm("¿Eliminar esta nota?")) return;
+  const leads = getLeads();
+  const lIdx  = leads.findIndex((l) => l.id === leadId);
+  if (lIdx === -1) return;
+  leads[lIdx].notas.splice(idx, 1); leadDetalleActual = leads[lIdx];
+  setLeads(leads); sincronizarLeadUpdateFirestore(leads[lIdx]);
+  renderNotasLog(leads[lIdx]); renderLeadsList();
+  mostrarToast("Nota eliminada", "info");
+}
+
+function abrirEditarNota(leadId, idx) {
+  const lead = getLeads().find((l) => l.id === leadId);
+  if (!lead || !lead.notas[idx]) return;
+  document.getElementById("edit-nota-texto").value   = lead.notas[idx].texto;
+  document.getElementById("edit-nota-lead-id").value = leadId;
+  document.getElementById("edit-nota-index").value   = idx;
+  document.getElementById("modalEditarNota").style.display = "flex";
+}
+
+function confirmarEditarNota() {
+  const texto  = document.getElementById("edit-nota-texto").value.trim();
+  const leadId = document.getElementById("edit-nota-lead-id").value;
+  const idx    = parseInt(document.getElementById("edit-nota-index").value, 10);
+  if (!texto) { mostrarToast("La nota no puede estar vacía", "info"); return; }
+  const leads = getLeads();
+  const lIdx  = leads.findIndex((l) => l.id === leadId);
+  if (lIdx === -1) return;
+  leads[lIdx].notas[idx].texto     = texto;
+  leads[lIdx].notas[idx].editadoEn = new Date().toISOString();
+  leadDetalleActual = leads[lIdx];
+  setLeads(leads); sincronizarLeadUpdateFirestore(leads[lIdx]);
+  cerrarModalEditarNota(); renderNotasLog(leads[lIdx]); renderLeadsList();
+  mostrarToast("Nota actualizada ✅", "success");
+}
+
+function cerrarModalEditarNota() { document.getElementById("modalEditarNota").style.display = "none"; }
+function abrirWaDesdeDetalle()   { if (leadDetalleActual?.phone) window.open("https://wa.me/" + leadDetalleActual.phone, "_blank"); }
+function cerrarModalLead()       { document.getElementById("modalLead").style.display = "none"; desbloquearScroll(); leadDetalleActual = null; }
+
+// ==============================
+// LEADS — EXPORTAR / IMPORTAR
+// ==============================
+async function shareFile1Tap({ filename, blob, title="HondaGo", text="" }) {
+  try {
+    if (!navigator.share) return false;
+    await navigator.share({ title, text, files: [new File([blob], filename, { type: blob.type||"application/octet-stream" })] });
+    return true;
+  } catch { return false; }
+}
+
+function exportLeadsCSV() {
+  const leads = getLeads(); if (!leads.length) { mostrarToast("No hay leads","info"); return; }
+  const headers = ["Fecha","Nombre","Teléfono","Modelo","Versión","Precio","Estado","Última nota"];
+  const rows    = leads.map((l) => [l.dateISO||"",l.name||"",l.phoneRaw||"",l.model||"",l.version||"",l.price||"",l.status||"nuevo",l.notas&&l.notas.length?l.notas[l.notas.length-1].texto:""]);
+  const esc = (v) => { const s=String(v??""); return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const csv = "\uFEFF" + [headers,...rows].map((r) => r.map(esc).join(",")).join("\r\n");
+  const filename = "leads-hondago-" + new Date().toISOString().slice(0,10) + ".csv";
+  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+  shareFile1Tap({ filename, blob, title:"HondaGo Leads CSV" }).then((shared) => {
+    if (shared) return;
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  });
+}
+
+function exportLeadsJSON() {
+  const payload  = { meta:{ app:"HondaGo", schema:2, exportedAt:new Date().toISOString() }, leads:getLeads() };
+  const filename = "leads-hondago-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  const blob = new Blob([JSON.stringify(payload,null,2)], { type:"application/json" });
+  shareFile1Tap({ filename, blob, title:"HondaGo Backup Leads" }).then((shared) => {
+    if (shared) return;
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  });
+}
+
+function openRestoreLeadsDialog() { const i=document.getElementById("lead-restore-file"); if(i){ i.value=""; i.click(); } }
+
+function clearLeads() {
+  if (!confirm("¿Borrar TODOS los leads? Esta acción no se puede deshacer.")) return;
+  localStorage.removeItem(LEADS_KEY); leadPage=1; renderLeadsList(); updateLeadCounter();
+  mostrarToast("Leads borrados","info");
+}
+
+async function restoreLeadsFromFile(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    let incoming = Array.isArray(data) ? data : Array.isArray(data.leads) ? data.leads : null;
+    if (!incoming) { mostrarToast("Formato no válido","error"); return; }
+    const replaceAll = confirm("¿Reemplazar todos los leads actuales?\nAceptar = Reemplazar\nCancelar = Fusionar");
+    const current    = getLeads();
+    const keyFor     = (l) => "tel:"+(l.phoneRaw||"")+"|model:"+(l.model||"")+"|date:"+(l.dateISO||"").slice(0,10);
+    const cleaned    = incoming.map((l) => ({ ...l, id:l.id||generateLeadId(), notas:l.notas||[], status:l.status||"nuevo" }));
+    let result = [];
+    if (replaceAll) { result = cleaned; }
+    else {
+      const byId   = new Set(current.map((l) => l.id).filter(Boolean));
+      const keyset = new Set(current.map(keyFor));
+      result = current.slice();
+      for (const l of cleaned) {
+        if (byId.has(l.id) || keyset.has(keyFor(l))) continue;
+        byId.add(l.id); keyset.add(keyFor(l)); result.push(l);
+      }
+    }
+    setLeads(result); updateLeadCounter(); renderLeadsList();
+    mostrarToast(replaceAll ? "Leads restaurados ✅" : "Leads fusionados ✅", "success");
+  } catch(err) { console.error(err); mostrarToast("No se pudo restaurar el archivo","error"); }
+}
+
+// ==============================
+// UTILIDADES
+// ==============================
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+}
+function formatDateTime(iso) {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleString("es-MX", { dateStyle:"short", timeStyle:"short" }); } catch { return ""; }
+}
+
+// ==============================
+// SCROLL LOCK
+// ==============================
+let lastScrollY = 0;
+function bloquearScroll() {
+  lastScrollY = window.scrollY || window.pageYOffset;
+  document.body.style.top = "-" + lastScrollY + "px";
+  document.body.classList.add("modal-open");
+}
+function desbloquearScroll() {
   document.body.classList.remove("modal-open");
   document.body.style.top = "";
   window.scrollTo(0, lastScrollY);
 }
 
-// Acciones de cierre
-document.getElementById("btnCerrarModal").onclick = document.getElementById(
-  "btnCancelar"
-).onclick = cerrarModal;
-
-// Cerrar con ESC
-document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape") cerrarModal();
-});
-
-// Cerrar al click fuera del modal
-document
-  .getElementById("modalGuardia")
-  .addEventListener("mousedown", function (e) {
-    if (e.target === this) cerrarModal();
-  });
-
-// Guardar/Actualizar evento
-document.getElementById("guardarGuardia").addEventListener("click", () => {
-  const tipo = document.getElementById("tipoEvento").value;
-  const id = document.getElementById("idGuardia").value;
-  let data = {};
-
-  // GUARDIA
-  if (tipo === "guardia") {
-    const nombre = document.getElementById("nombreGuardia").value.trim();
-    const turno = document.getElementById("turnoGuardia").value;
-    if (!nombre) return alert("Ingresa un nombre");
-
-    const horaInicio = turno === "am" ? "08:00:00" : "14:00:00";
-    const horaFin = turno === "am" ? "14:00:00" : "20:00:00";
-    const color = turno === "am" ? "#FFA500" : "#007bff";
-
-    data = {
-      tipo: "guardia",
-      title: `Guardia ${nombre.toUpperCase()} ${turno.toUpperCase()}`,
-      nombre: nombre,
-      turno: turno,
-      start: `${fechaSeleccionada}T${horaInicio}`,
-      end: `${fechaSeleccionada}T${horaFin}`,
-      color: color,
-    };
-  }
-
-  // RECORDATORIO
-  if (tipo === "recordatorio") {
-    const titulo = document.getElementById("tituloRecordatorio").value.trim();
-    const nota = document.getElementById("notaRecordatorio").value.trim();
-    const hora = document.getElementById("horaRecordatorio").value;
-    if (!titulo) return alert("Ingresa un título para el recordatorio");
-    if (!hora) return alert("Selecciona la hora del recordatorio");
-
-    data = {
-      tipo: "recordatorio",
-      title: `🛎️ ${titulo}`,
-      titulo: titulo,
-      nota: nota,
-      start: `${fechaSeleccionada}T${hora}`,
-      end: `${fechaSeleccionada}T${hora}`,
-      color: "#4CAF50",
-    };
-  }
-
-  // Guardar o actualizar en Firestore
-  const ref = id
-    ? db.collection("guardias").doc(id).update(data)
-    : db.collection("guardias").add(data);
-
-  ref
-    .then(() => {
-      mostrarToast(id ? "Evento actualizado" : "Evento registrado");
-      cerrarModal();
-    })
-    .catch((err) => {
-      console.error("Error al guardar:", err);
-    });
-});
-
-// Eliminar evento
-document.getElementById("btnEliminarGuardia").addEventListener("click", () => {
-  const id = document.getElementById("idGuardia").value;
-  if (!id) return;
-
-  if (confirm("¿Deseas eliminar esta guardia?")) {
-    db.collection("guardias")
-      .doc(id)
-      .delete()
-      .then(() => {
-        mostrarToast("Guardia eliminada");
-        cerrarModal();
-      })
-      .catch((err) => {
-        console.error("Error al eliminar:", err);
-      });
-  }
-});
-
-// Utilidad: extraer nombre del título visual
-function extraerNombre(titulo) {
-  // Si por accidente recibes HTML, saca solo el nombre
-  if (titulo.includes("<span")) {
-    const match = titulo.match(/<span[^>]*>(.*?)<\/span>/);
-    return match ? match[1] : "";
-  }
-  // Si es texto plano, saca solo el nombre
-  return titulo.replace("Guardia ", "").replace(" AM", "").replace(" PM", "");
-}
-
-// Control dinámico de secciones en el modal según el tipo de evento
-const tipoEvento = document.getElementById("tipoEvento");
-const seccionGuardia = document.getElementById("seccionGuardia");
-const seccionRecordatorio = document.getElementById("seccionRecordatorio");
-tipoEvento.addEventListener("change", function () {
-  if (this.value === "guardia") {
-    seccionGuardia.style.display = "block";
-    seccionRecordatorio.style.display = "none";
-    document.getElementById("iconModal").textContent = "👤";
-    document.getElementById("tituloModalGuardia").textContent = "Nueva Guardia";
-  } else if (this.value === "recordatorio") {
-    seccionGuardia.style.display = "none";
-    seccionRecordatorio.style.display = "block";
-    document.getElementById("iconModal").textContent = "🛎️";
-    document.getElementById("tituloModalGuardia").textContent =
-      "Nuevo Recordatorio";
-  }
-});
-
 // ==============================
-// MODO OSCURO (LOCALSTORAGE)
+// MODO OSCURO
 // ==============================
 function aplicarModoOscuroDesdeStorage() {
-  const darkModeActivo = localStorage.getItem("modoOscuro") === "true";
-  document.body.classList.toggle("dark-mode", darkModeActivo);
+  const dark = localStorage.getItem("modoOscuro") === "true";
+  document.body.classList.toggle("dark-mode", dark);
   const icon = document.getElementById("icon-darkmode");
-  if (icon) icon.textContent = darkModeActivo ? "light_mode" : "dark_mode";
+  if (icon) icon.textContent = dark ? "light_mode" : "dark_mode";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  aplicarModoOscuroDesdeStorage();
+// ==============================
+// TOAST
+// ==============================
+function mostrarToast(mensaje, tipo="success") {
+  const icon  = { success:"✅", error:"❌", info:"ℹ️" }[tipo] || "ℹ️";
+  const toast = document.createElement("div");
+  toast.className = "toast-ux " + tipo;
+  toast.innerHTML = "<span>" + icon + "</span> <span>" + mensaje + "</span>";
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.remove(), 700); }, 2800);
+}
 
+// ==============================
+// CALENDARIO DE GUARDIAS
+// ==============================
+let calendar;
+let fechaSeleccionada = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const calendarEl = document.getElementById("calendario-guardias");
+  if (!calendarEl) return;
+  calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: "es", initialView: "dayGridMonth", height: "auto",
+    headerToolbar: { left:"prev,next today", center:"title", right:"dayGridMonth" },
+    events: [],
+    eventContent: (arg) => ({ html: arg.event.title }),
+    dateClick:  (info) => abrirModalGuardia(info.dateStr),
+    eventClick: (info) => {
+      const ev = info.event;
+      fechaSeleccionada = ev.startStr.split("T")[0];
+      abrirModalGuardia(fechaSeleccionada, true, ev);
+    },
+  });
+  cargarGuardiasDesdeFirestore();
+  const datalist = document.getElementById("colaboradores");
+  if (datalist) datalist.innerHTML = "<option value=\"Israel\">";
+});
+
+function cargarGuardiasDesdeFirestore() {
+  db.collection("guardias").onSnapshot((snap) => {
+    if (!calendar) return;
+    calendar.getEvents().forEach((e) => e.remove());
+    snap.forEach((doc) => {
+      const d = doc.data(); if (!d.tipo) return;
+      let title = "", color = d.color || "#007bff";
+      if (d.tipo === "guardia") {
+        const isAM = d.title && d.title.includes("AM");
+        color = isAM ? "#FFA500" : "#007bff";
+        title = (isAM ? "☀️" : "🌙") + ' <span class="badge-colaborador">' + extraerNombre(d.title||"") + "</span>";
+      }
+      if (d.tipo === "recordatorio") {
+        title = '🛎️ <span class="badge-colaborador">' + (d.titulo||"") + "</span>";
+        color = "#4CAF50";
+      }
+      calendar.addEvent({ id:doc.id, title, start:d.start, end:d.end, color, display:"auto" });
+    });
+  });
+}
+
+function abrirModalGuardia(fechaStr, modoEdicion=false, eventoData=null) {
+  fechaSeleccionada = fechaStr;
+  document.getElementById("modalGuardia").style.display = "flex";
+  bloquearScroll();
+  if (modoEdicion && eventoData) {
+    document.getElementById("idGuardia").value              = eventoData.id;
+    document.getElementById("nombreGuardia").value          = extraerNombre(eventoData.title);
+    document.getElementById("turnoGuardia").value           = eventoData.title.includes("AM") ? "am" : "pm";
+    document.getElementById("tituloModalGuardia").textContent = "Editar Guardia";
+    document.getElementById("iconModal").innerHTML          = eventoData.title.includes("AM") ? "☀️" : "🌙";
+    document.getElementById("btnEliminarGuardia").style.display = "block";
+  } else {
+    document.getElementById("idGuardia").value              = "";
+    document.getElementById("nombreGuardia").value          = "Israel";
+    document.getElementById("turnoGuardia").value           = "am";
+    document.getElementById("tituloModalGuardia").textContent = "Nueva Guardia";
+    document.getElementById("iconModal").innerHTML          = "👤";
+    document.getElementById("btnEliminarGuardia").style.display = "none";
+  }
+  requestAnimationFrame(() => document.getElementById("nombreGuardia")?.focus());
+}
+
+function cerrarModalGuardia() {
+  document.getElementById("modalGuardia").style.display = "none";
+  desbloquearScroll();
+}
+
+function extraerNombre(titulo) {
+  if (titulo.includes("<span")) { const m=titulo.match(/<span[^>]*>(.*?)<\/span>/); return m?m[1]:""; }
+  return titulo.replace("Guardia ","").replace(" AM","").replace(" PM","");
+}
+
+// ==============================
+// ROL MENSUAL
+// ==============================
+let rolGrid = {};
+
+function abrirModalRolMes() {
+  const hoy     = new Date();
+  const selMes  = document.getElementById("rol-mes");
+  const selAnio = document.getElementById("rol-anio");
+  if (!selMes || !selAnio) return;
+  selMes.value  = hoy.getMonth();
+  selAnio.innerHTML = "";
+  [hoy.getFullYear(), hoy.getFullYear()+1].forEach((y) => {
+    const op = document.createElement("option"); op.value=y; op.textContent=y; selAnio.appendChild(op);
+  });
+  selAnio.value = hoy.getFullYear();
+  rolGrid = {}; renderRolGrid();
+  document.getElementById("modalRolMes").style.display = "flex";
+  bloquearScroll();
+  selMes.onchange  = renderRolGrid;
+  selAnio.onchange = renderRolGrid;
+}
+
+function cerrarModalRolMes() {
+  const m = document.getElementById("modalRolMes"); if (m) m.style.display="none";
+  desbloquearScroll(); rolGrid={};
+}
+
+function renderRolGrid() {
+  const mes  = parseInt(document.getElementById("rol-mes").value, 10);
+  const anio = parseInt(document.getElementById("rol-anio").value, 10);
+  const dias = new Date(anio, mes+1, 0).getDate();
+  const grid = document.getElementById("rol-grid");
+  const diasSemana = ["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+  let html = '<div class="rol-grid-header">' + diasSemana.map(d=>"<span>"+d+"</span>").join("") + "</div>";
+  const offsetLun = (new Date(anio,mes,1).getDay()+6)%7;
+  html += '<div class="rol-grid-days">';
+  for (let i=0; i<offsetLun; i++) html += '<div class="rol-day rol-day-empty"></div>';
+  for (let d=1; d<=dias; d++) {
+    const fecha  = anio + "-" + String(mes+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    const estado = rolGrid[fecha] || "";
+    const clase  = estado==="am"?"rol-day-am":estado==="pm"?"rol-day-pm":"";
+    const label  = estado==="am"?"☀️":estado==="pm"?"🌙":"";
+    html += '<div class="rol-day '+clase+'" data-fecha="'+fecha+'" onclick="toggleRolDia(\''+fecha+'\')">'
+      + '<span class="rol-day-num">'+d+'</span><span class="rol-day-turno">'+label+'</span></div>';
+  }
+  html += "</div>"; grid.innerHTML = html;
+}
+
+function toggleRolDia(fecha) {
+  const actual = rolGrid[fecha]||"";
+  rolGrid[fecha] = actual===""?"am":actual==="am"?"pm":"";
+  const celda = document.querySelector('.rol-day[data-fecha="'+fecha+'"]');
+  if (!celda) return;
+  const estado = rolGrid[fecha];
+  celda.className = "rol-day"+(estado==="am"?" rol-day-am":estado==="pm"?" rol-day-pm":"");
+  celda.querySelector(".rol-day-turno").textContent = estado==="am"?"☀️":estado==="pm"?"🌙":"";
+}
+
+function limpiarRolGrid() { rolGrid={}; renderRolGrid(); }
+
+function guardarRolMes() {
+  const dias = Object.entries(rolGrid).filter(([,v])=>v==="am"||v==="pm");
+  if (!dias.length) { mostrarToast("Selecciona al menos un día con turno","info"); return; }
+  const nota = document.getElementById("rol-nota-guardando");
+  const btn  = document.getElementById("btn-rol-guardar");
+  if (nota) nota.style.display="block";
+  if (btn)  btn.disabled=true;
+  setTimeout(()=>_ejecutarGuardadoRol(dias,nota,btn),0);
+}
+
+async function _ejecutarGuardadoRol(dias, nota, btn) {
+  let ok=0, err=0;
+  for (let i=0;i<dias.length;i+=10) {
+    await Promise.all(dias.slice(i,i+10).map(async([fecha,turno])=>{
+      try {
+        await db.collection("guardias").add({
+          tipo:"guardia", turno, title:"Guardia ISRAEL "+turno.toUpperCase(), nombre:"Israel",
+          start:fecha+"T"+(turno==="am"?"08:00:00":"14:00:00"),
+          end:  fecha+"T"+(turno==="am"?"14:00:00":"20:00:00"),
+          color:turno==="am"?"#FFA500":"#007bff",
+        });
+        ok++;
+      } catch(_){ err++; }
+    }));
+  }
+  if (nota) nota.style.display="none";
+  if (btn)  btn.disabled=false;
+  if (err===0) { mostrarToast("✅ "+ok+" guardias guardadas","success"); cerrarModalRolMes(); }
+  else mostrarToast("⚠️ "+ok+" guardadas, "+err+" fallaron","error");
+}
+
+// ==============================
+// DOMContentLoaded — todos los listeners
+// ==============================
+document.addEventListener("DOMContentLoaded", () => {
+
+  // Dark mode
+  aplicarModoOscuroDesdeStorage();
   const toggleBtn = document.getElementById("toggle-darkmode");
   if (toggleBtn) {
     toggleBtn.addEventListener("click", () => {
-      const darkModeNow = !document.body.classList.contains("dark-mode");
-      document.body.classList.toggle("dark-mode", darkModeNow);
-      localStorage.setItem("modoOscuro", darkModeNow);
+      const now = !document.body.classList.contains("dark-mode");
+      document.body.classList.toggle("dark-mode", now);
+      localStorage.setItem("modoOscuro", now);
       const icon = document.getElementById("icon-darkmode");
-      if (icon) icon.textContent = darkModeNow ? "light_mode" : "dark_mode";
+      if (icon) icon.textContent = now ? "light_mode" : "dark_mode";
     });
   }
+
+  // Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { cerrarModalGuardia(); cerrarModalLead(); cerrarModalEditarNota(); cerrarModalRolMes(); }
+  });
+
+  // Cerrar modales
+  document.getElementById("btnCerrarModal")?.addEventListener("click", cerrarModalGuardia);
+  document.getElementById("btnCancelar")?.addEventListener("click", cerrarModalGuardia);
+  document.getElementById("modalGuardia")?.addEventListener("mousedown",(e)=>{ if(e.target===e.currentTarget) cerrarModalGuardia(); });
+
+  document.getElementById("btnCerrarModalLead")?.addEventListener("click", cerrarModalLead);
+  document.getElementById("modalLead")?.addEventListener("mousedown",(e)=>{ if(e.target===e.currentTarget) cerrarModalLead(); });
+
+  document.getElementById("btnCerrarEditarNota")?.addEventListener("click", cerrarModalEditarNota);
+  document.getElementById("modalEditarNota")?.addEventListener("mousedown",(e)=>{ if(e.target===e.currentTarget) cerrarModalEditarNota(); });
+
+  document.getElementById("btnCerrarRolMes")?.addEventListener("click", cerrarModalRolMes);
+  document.getElementById("modalRolMes")?.addEventListener("mousedown",(e)=>{ if(e.target===e.currentTarget) cerrarModalRolMes(); });
+
+  // Guardar guardia — cierra modal ANTES de escribir a Firestore
+  document.getElementById("guardarGuardia")?.addEventListener("click", () => {
+    const tipo = document.getElementById("tipoEvento").value;
+    const id   = document.getElementById("idGuardia").value;
+    let data   = {};
+    if (tipo === "guardia") {
+      const nombre = document.getElementById("nombreGuardia").value.trim();
+      const turno  = document.getElementById("turnoGuardia").value;
+      if (!nombre) { mostrarToast("Ingresa un nombre","error"); return; }
+      data = { tipo, turno, title:"Guardia "+nombre.toUpperCase()+" "+turno.toUpperCase(), nombre,
+        start:fechaSeleccionada+"T"+(turno==="am"?"08:00:00":"14:00:00"),
+        end:  fechaSeleccionada+"T"+(turno==="am"?"14:00:00":"20:00:00"),
+        color:turno==="am"?"#FFA500":"#007bff" };
+    }
+    if (tipo === "recordatorio") {
+      const titulo = document.getElementById("tituloRecordatorio").value.trim();
+      const nota   = document.getElementById("notaRecordatorio").value.trim();
+      const hora   = document.getElementById("horaRecordatorio").value;
+      if (!titulo) { mostrarToast("Ingresa un título","error"); return; }
+      if (!hora)   { mostrarToast("Selecciona la hora","error"); return; }
+      data = { tipo, title:"🛎️ "+titulo, titulo, nota,
+        start:fechaSeleccionada+"T"+hora, end:fechaSeleccionada+"T"+hora, color:"#4CAF50" };
+    }
+    cerrarModalGuardia();
+    const ref = id ? db.collection("guardias").doc(id).update(data) : db.collection("guardias").add(data);
+    ref.then(()=>mostrarToast(id?"Evento actualizado ✅":"Guardia registrada ✅","success"))
+       .catch(()=>mostrarToast("Error al guardar","error"));
+  });
+
+  // Eliminar guardia
+  document.getElementById("btnEliminarGuardia")?.addEventListener("click", () => {
+    const id = document.getElementById("idGuardia").value;
+    if (!id) return;
+    if (!confirm("¿Eliminar esta guardia?")) return;
+    cerrarModalGuardia();
+    db.collection("guardias").doc(id).delete()
+      .then(()=>mostrarToast("Guardia eliminada ✅","success"))
+      .catch(()=>mostrarToast("Error al eliminar","error"));
+  });
+
+  // Tipo evento
+  document.getElementById("tipoEvento")?.addEventListener("change", function() {
+    const isGuardia = this.value === "guardia";
+    document.getElementById("seccionGuardia").style.display      = isGuardia?"block":"none";
+    document.getElementById("seccionRecordatorio").style.display  = isGuardia?"none":"block";
+    document.getElementById("iconModal").textContent              = isGuardia?"👤":"🛎️";
+    document.getElementById("tituloModalGuardia").textContent     = isGuardia?"Nueva Guardia":"Nuevo Recordatorio";
+  });
+
+  // Restaurar leads desde archivo
+  const inputRestore = document.getElementById("lead-restore-file");
+  if (inputRestore && !inputRestore._bound) {
+    inputRestore._bound = true;
+    inputRestore.addEventListener("change", async(e) => {
+      const file = e.target.files && e.target.files[0]; if (file) await restoreLeadsFromFile(file);
+    });
+  }
+
+  cambiarTab("vehiculos");
+  updateLeadCounter();
 });
 
 // ==============================
-// ACTUALIZACIÓN PWA Y BANNER DE CAMBIOS
+// PWA — SERVICE WORKER
 // ==============================
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("service-worker.js")
-      .then((registration) => {
-        registration.onupdatefound = () => {
-          const newWorker = registration.installing;
-          newWorker.onstatechange = () => {
-            if (
-              newWorker.state === "installed" &&
-              navigator.serviceWorker.controller
-            ) {
-              mostrarBotonActualizacion();
-            }
-          };
-        };
-      });
-  });
-
-  // Recarga automática cuando el nuevo SW toma control
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) {
-      window.location.reload();
-      refreshing = true;
-    }
-  });
-}
-
-// Muestra el banner/botón de actualización
 function mostrarBotonActualizacion() {
-  const contenedor = document.getElementById("actualizacion-info");
-  const listaCambios = document.getElementById("lista-cambios");
-  const boton = document.getElementById("btn-actualizar");
-  const btnMasActualizar = document.getElementById("btn-mas-actualizar");
-
-  if (contenedor && listaCambios && boton && btnMasActualizar) {
-    listaCambios.innerHTML = `
-      <li>📄 Precios actualizados (precios.json)</li>
-      <li>📑 Oferta comercial (oferta.pdf)</li>
-      <li>🧾 Bonos y descuentos (descuentos.pdf)</li>
-      <li>📅 Guardias del mes (guardias.pdf)</li>
-    `;
-    contenedor.style.display = "block";
-    boton.style.display = "inline-block";
-    btnMasActualizar.style.display = "block"; // botón visible en menú "Más"
+  const cont  = document.getElementById("actualizacion-info");
+  const lista = document.getElementById("lista-cambios");
+  const btn   = document.getElementById("btn-actualizar");
+  const btnMas= document.getElementById("btn-mas-actualizar");
+  if (cont && lista && btn && btnMas) {
+    lista.innerHTML =
+      "<li>🚗 Catálogo de vehículos 2026</li>" +
+      "<li>💼 Módulo Leads con CRM</li>" +
+      "<li>📄 Financiamiento con links Drive</li>" +
+      "<li>📅 Carga rápida de guardias</li>";
+    cont.style.display="block"; btn.style.display="inline-block"; btnMas.style.display="block";
   }
 }
 
-// Forzar actualizar SW
 function actualizarApp() {
-  navigator.serviceWorker.getRegistration().then((reg) => {
-    if (reg?.waiting) {
-      reg.waiting.postMessage("SKIP_WAITING");
-    }
-  });
-  setTimeout(() => {
-    window.location.reload();
-  }, 800);
-}
-const btnActualizar = document.getElementById("btn-actualizar");
-if (btnActualizar) btnActualizar.onclick = actualizarApp;
-
-// ==============================
-// TOAST NOTIFICACIONES
-// ==============================
-function mostrarToast(mensaje, tipo = "success") {
-  // tipo: "success", "error", "info"
-  let icon = "✅";
-  if (tipo === "error") icon = "❌";
-  if (tipo === "info") icon = "ℹ️";
-
-  const toast = document.createElement("div");
-  toast.className = `toast-ux ${tipo}`;
-  toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${mensaje}</span>`;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = 0;
-    setTimeout(() => toast.remove(), 700);
-  }, 2800);
+  navigator.serviceWorker.getRegistration().then((reg) => { if (reg?.waiting) reg.waiting.postMessage({ action:"skipWaiting" }); });
+  setTimeout(() => location.reload(), 800);
 }
 
-// ⚠️ SOLO PARA PRUEBA. Úsalo una vez y luego bórralo/koméntalo.
-/* function seedFakeLeads(n = 120) {
-  const models = ["CIVIC", "HRV", "CRV", "CITY", "ACCORD"];
-  const versions = ["Touring", "Sport", "Prime", "Turbo", "Uniq"];
-  const leads = [];
-  for (let i = 0; i < n; i++) {
-    const d = new Date(Date.now() - i * 3600e3).toISOString();
-    leads.push({
-      dateISO: d,
-      name: `Cliente ${String(i + 1).padStart(3, "0")}`,
-      phone: "529991234567",
-      phoneRaw: "999 123 4567",
-      countryCode: "52",
-      model: models[i % models.length],
-      version: versions[i % versions.length],
-      price: `$${(500000 + i * 1000).toLocaleString()}`,
-    });
-  }
-  localStorage.setItem("hondago_leads_v1", JSON.stringify(leads));
-  // Reinicia a la página 1 y re-renderiza
-  leadPage = 1;
-  renderLeadsList();
-  updateLeadCounter();
-} */
-//seedFakeLeads(); // <- descomenta, recarga, y vuelve a comentar
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btn-actualizar"); if (btn) btn.onclick = actualizarApp;
+});
 
-// Borra únicamente los leads sembrados por el seed (ejemplo: "Cliente 001" y tel fijo)
-/* function purgeSeededLeads() {
-  const leads = getLeads();
-  const filtered = leads.filter((l) => {
-    const isSeedName = String(l.name || "").startsWith("Cliente ");
-    const isSeedPhone = String(l.phone || "") === "529991234567";
-    return !(isSeedName && isSeedPhone);
-  });
-  setLeads(filtered);
-  leadPage = 1;
-  renderLeadsList();
-  updateLeadCounter();
-  alert("Leads de prueba eliminados. Los reales se conservaron.");
-}
-purgeSeededLeads(); // <- ejecuta una vez y luego comenta/borra */
-
-// --------- Registro del Service Worker con auto-update ---------
-(function registerSW() {
-  if (!("serviceWorker" in navigator)) return;
-
-  // Ruta relativa para que funcione en GitHub Pages /repo/
-  const swUrl = new URL("service-worker.js", location.href);
-
-  navigator.serviceWorker
-    .register(swUrl.href)
-    .then((reg) => {
-      // Fuerza a buscar una versión nueva cuando la pantalla vuelve a ser visible
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-          reg.update().catch(() => {});
-        }
-      });
-
-      // Si ya hay un SW esperando -> pídele activarse
-      if (reg.waiting) {
-        reg.waiting.postMessage({ action: "skipWaiting" });
-      }
-
-      // Detecta SW nuevo
-      reg.addEventListener("updatefound", () => {
-        const newSW = reg.installing;
-        if (!newSW) return;
-
-        newSW.addEventListener("statechange", () => {
-          if (
-            newSW.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            // Nuevo SW instalado: actívalo y recarga cuando tome control
-            newSW.postMessage({ action: "skipWaiting" });
-          }
-        });
-      });
-
-      // Cuando el SW toma control, recarga 1 vez
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
-        refreshing = true;
-        location.reload();
-      });
-    })
-    .catch((err) => {
-      console.warn("SW registration failed:", err);
-    });
-})();
-
-// ==============================
-// PWA Update + PDF cache-busting
-// ==============================
 const ASSET_VER_KEY = "hondago_asset_ver";
+function getAssetVer()  { return localStorage.getItem(ASSET_VER_KEY) || "1"; }
+function bumpAssetVer() { localStorage.setItem(ASSET_VER_KEY, String((parseInt(getAssetVer(),10)||1)+1)); }
 
-function getAssetVer() {
-  return localStorage.getItem(ASSET_VER_KEY) || "1";
-}
-function bumpAssetVer() {
-  const n = parseInt(getAssetVer(), 10) || 1;
-  localStorage.setItem(ASSET_VER_KEY, String(n + 1));
-}
-
-// Aplica ?v=<assetVer> a los iframes de PDFs (se llama al cargar y tras update)
-function applyPdfVersionParam() {
-  const v = getAssetVer();
-  document
-    .querySelectorAll(
-      'iframe[src$="pdf/oferta.pdf"], iframe[src$="pdf/descuentos.pdf"]'
-    )
-    .forEach((ifr) => {
-      const u = new URL(ifr.getAttribute("src"), location.href);
-      u.searchParams.set("v", v);
-      // Deja la ruta en relativo + query para que funcione igual en GitHub Pages
-      ifr.src = `${u.pathname}${u.search}`;
-    });
-}
-
-// Aplica el versionado de PDFs al cargar
-document.addEventListener("DOMContentLoaded", applyPdfVersionParam);
-
-// =========== Registro ÚNICO del Service Worker ===========
 (function registerSW() {
   if (!("serviceWorker" in navigator)) return;
-
-  const swUrl = new URL("service-worker.js", location.href);
-  navigator.serviceWorker
-    .register(swUrl)
-    .then((reg) => {
-      // Cuando encuentra un SW nuevo, mostramos el botón "Actualizar"
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            // Ya hay uno activo: hay actualización lista
-            if (typeof mostrarBotonActualizacion === "function") {
-              mostrarBotonActualizacion();
-            }
-          }
-        });
-      });
-    })
-    .catch((err) => console.warn("SW register error:", err));
-
-  // Cuando el nuevo SW toma control -> incrementa version de assets y recarga
+  navigator.serviceWorker.register(new URL("service-worker.js", location.href).href).then((reg) => {
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState==="visible") reg.update().catch(()=>{}); });
+    reg.addEventListener("updatefound", () => {
+      const nw = reg.installing; if (!nw) return;
+      nw.addEventListener("statechange", () => { if (nw.state==="installed"&&navigator.serviceWorker.controller) mostrarBotonActualizacion(); });
+    });
+  }).catch((err) => console.warn("SW register error:", err));
   let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    bumpAssetVer(); // <- sube versión de assets para bustear los PDFs
-    refreshing = true;
-    location.reload();
-  });
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (refreshing) return; bumpAssetVer(); refreshing=true; location.reload(); });
 })();
