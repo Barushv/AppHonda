@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>HondaGo — Admin</title>
+  <link rel="icon" href="img/icono-pwa.png"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <style>
+    :root {
+      --red:     #e60012;
+      --blue:    #007aff;
+      --green:   #30d158;
+      --bg:      #f2f2f7;
+      --white:   #ffffff;
+      --border:  #d1d1d6;
+      --text:    #1c1c1e;
+      --muted:   #8e8e93;
+      --radius:  14px;
+      --shadow:  0 4px 16px rgba(0,0,0,.09);
+      --font:    "Segoe UI", sans-serif;
+    }
+    body.dark {
+      --bg:    #1c1c1e;
+      --white: #2c2c2e;
+      --border:#3a3a3c;
+      --text:  #f1f1f1;
+      --muted: #aeaeb2;
+    }
+    *, *::before, *::after { box-sizing:border-box; }
+    body { margin:0; font-family:var(--font); background:var(--bg); color:var(--text);
+           padding-bottom:30px; -webkit-font-smoothing:antialiased; }
+
+    /* HEADER */
+    header {
+      position:sticky; top:0; z-index:100;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px;
+      background:var(--white); border-bottom:1px solid var(--border);
+      box-shadow:0 1px 6px rgba(0,0,0,.07);
+    }
+    header h1 { margin:0; font-size:20px; color:var(--red); font-weight:800; }
+    .header-actions { display:flex; gap:8px; align-items:center; }
+    .btn-icon { background:none; border:none; cursor:pointer; padding:6px;
+                border-radius:50%; display:flex; align-items:center; color:var(--muted); }
+    .btn-icon:hover { background:rgba(0,0,0,.06); }
+    .btn-icon .material-icons { font-size:24px; }
+    body.dark .btn-icon .material-icons { color:#ffe62e; }
+
+    /* LOGIN */
+    #screen-login {
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; min-height:80vh; padding:20px;
+    }
+    .login-card {
+      background:var(--white); border-radius:20px; box-shadow:var(--shadow);
+      padding:32px 24px; width:100%; max-width:360px; text-align:center;
+    }
+    .login-card img { width:120px; margin-bottom:12px; }
+    .login-card h2 { margin:0 0 6px; color:var(--red); }
+    .login-card p  { margin:0 0 20px; color:var(--muted); font-size:14px; }
+    .login-input {
+      width:100%; padding:13px 14px; border:1.5px solid var(--border);
+      border-radius:12px; font-size:16px; background:var(--bg); color:var(--text);
+      outline:none; margin-bottom:12px;
+    }
+    .login-input:focus { border-color:var(--blue); }
+    .btn-primary {
+      width:100%; padding:13px; border:none; border-radius:12px;
+      background:var(--red); color:#fff; font-size:16px; font-weight:700;
+      cursor:pointer; transition:background .15s;
+    }
+    .btn-primary:hover { background:#c00010; }
+    .login-error { color:#ff3b30; font-size:13px; margin-top:6px; display:none; }
+
+    /* PANEL PRINCIPAL */
+    #screen-panel { display:none; padding:16px; }
+
+    /* FINANCIAMIENTO */
+    .section-card {
+      background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow);
+      margin-bottom:20px; overflow:hidden;
+    }
+    .section-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; border-bottom:1px solid var(--border);
+    }
+    .section-header h2 { margin:0; font-size:17px; font-weight:800; }
+    .badge-info {
+      font-size:11px; font-weight:700; background:#e3f2fd; color:#1565c0;
+      padding:3px 10px; border-radius:20px; border:1px solid #90caf9;
+    }
+
+    /* FIN LINKS */
+    .fin-row { padding:12px 16px; border-bottom:1px solid var(--border); }
+    .fin-row:last-child { border-bottom:none; }
+    .fin-row label { font-size:13px; font-weight:700; color:var(--muted); display:block; margin-bottom:6px; }
+    .fin-input-row { display:flex; gap:8px; align-items:center; }
+    .fin-input {
+      flex:1; padding:10px 12px; border:1.5px solid var(--border);
+      border-radius:10px; font-size:14px; background:var(--bg); color:var(--text); outline:none;
+    }
+    .fin-input:focus { border-color:var(--blue); }
+    .btn-save-fin {
+      padding:10px 14px; background:var(--blue); color:#fff; border:none;
+      border-radius:10px; font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap;
+    }
+    .btn-save-fin:hover { background:#005ec7; }
+
+    /* CATÁLOGO — MODELOS */
+    .model-accordion { border-bottom:1px solid var(--border); }
+    .model-accordion:last-child { border-bottom:none; }
+    .model-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; cursor:pointer; user-select:none;
+      transition:background .14s;
+    }
+    .model-header:hover { background:rgba(0,0,0,.03); }
+    .model-title { display:flex; align-items:center; gap:10px; }
+    .model-name { font-weight:700; font-size:15px; }
+    .model-count { font-size:12px; color:var(--muted); }
+    .chevron { transition:transform .2s; color:var(--muted); }
+    .chevron.open { transform:rotate(180deg); }
+    .model-body { display:none; padding:0 12px 12px; }
+    .model-body.open { display:block; }
+
+    /* VERSIONES */
+    .version-row {
+      display:grid; grid-template-columns:1fr auto auto auto;
+      gap:8px; align-items:center; margin-bottom:8px;
+      padding:10px 12px; background:var(--bg); border-radius:12px;
+    }
+    .ver-info { display:flex; flex-direction:column; gap:2px; }
+    .ver-nombre { font-weight:700; font-size:14px; }
+    .ver-meta   { font-size:12px; color:var(--muted); }
+    .badge-hev {
+      display:inline-block; background:#d4f1e0; color:#1a9e4a;
+      border:1px solid #8ce0b0; border-radius:20px;
+      padding:1px 7px; font-size:11px; font-weight:700;
+    }
+    .precio-input {
+      width:120px; padding:8px 10px; border:1.5px solid var(--border);
+      border-radius:10px; font-size:14px; font-weight:700;
+      background:var(--white); color:var(--text); outline:none;
+      text-align:right;
+    }
+    .precio-input:focus { border-color:var(--blue); }
+    .btn-save-ver {
+      padding:8px 12px; background:var(--blue); color:#fff; border:none;
+      border-radius:10px; font-weight:700; font-size:13px; cursor:pointer;
+      white-space:nowrap;
+    }
+    .btn-save-ver:saved { background:var(--green); }
+    .btn-del-ver {
+      padding:8px 10px; background:#ff3b3020; color:#ff3b30;
+      border:1.5px solid #ff3b3040; border-radius:10px;
+      font-size:13px; cursor:pointer;
+    }
+
+    /* FICHA LINK */
+    .ficha-row {
+      margin-top:4px; padding:10px 12px;
+      background:var(--bg); border-radius:12px; margin-bottom:4px;
+    }
+    .ficha-row label { font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px; }
+    .ficha-input-row { display:flex; gap:6px; }
+    .ficha-input {
+      flex:1; padding:8px 10px; border:1.5px solid var(--border);
+      border-radius:10px; font-size:13px; background:var(--white);
+      color:var(--text); outline:none;
+    }
+    .ficha-input:focus { border-color:var(--blue); }
+    .btn-save-ficha {
+      padding:8px 12px; background:#5856d6; color:#fff; border:none;
+      border-radius:10px; font-weight:700; font-size:13px; cursor:pointer;
+    }
+    .btn-test-ficha {
+      padding:8px 12px; background:transparent; color:#5856d6;
+      border:1.5px solid #5856d6; border-radius:10px;
+      font-size:13px; cursor:pointer;
+    }
+
+    /* AGREGAR VERSIÓN */
+    .add-version-section {
+      margin-top:10px; padding:12px; border:1.5px dashed var(--border);
+      border-radius:12px;
+    }
+    .add-version-section h4 { margin:0 0 10px; font-size:14px; color:var(--muted); }
+    .add-row { display:flex; gap:6px; flex-wrap:wrap; }
+    .add-input {
+      flex:1; min-width:120px; padding:9px 11px; border:1.5px solid var(--border);
+      border-radius:10px; font-size:14px; background:var(--white); color:var(--text); outline:none;
+    }
+    .add-input:focus { border-color:var(--blue); }
+    .add-select {
+      padding:9px 10px; border:1.5px solid var(--border);
+      border-radius:10px; font-size:14px; background:var(--white);
+      color:var(--text); outline:none;
+    }
+    .btn-add-ver {
+      padding:9px 14px; background:var(--green); color:#fff; border:none;
+      border-radius:10px; font-weight:700; font-size:14px; cursor:pointer;
+    }
+
+    /* TOAST */
+    .toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      background:#1c1c1e; color:#fff; padding:11px 20px; border-radius:30px;
+      font-size:14px; font-weight:600; z-index:99999; display:flex;
+      align-items:center; gap:8px; white-space:nowrap;
+      box-shadow:0 4px 20px rgba(0,0,0,.3); transition:opacity .5s;
+    }
+    .toast.success { background:#128c7e; }
+    .toast.error   { background:#ff3b30; }
+    .toast.info    { background:#007aff; }
+
+    /* LOADING */
+    .loading-overlay {
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.35); align-items:center; justify-content:center;
+    }
+    .loading-overlay.show { display:flex; }
+    .spinner {
+      width:44px; height:44px; border:4px solid rgba(255,255,255,.2);
+      border-top-color:#fff; border-radius:50%;
+      animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* SYNC STATUS */
+    .sync-bar {
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      font-size:12px; color:var(--muted); padding:6px 0 0; text-align:center;
+    }
+    .sync-dot { width:8px; height:8px; border-radius:50%; background:var(--green); }
+    .sync-dot.offline { background:#ff9500; }
+
+    @media(max-width:400px) {
+      .version-row { grid-template-columns:1fr auto; grid-template-rows:auto auto; }
+      .precio-input { width:100%; }
+      .btn-save-ver, .btn-del-ver { padding:8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING -->
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <h1>⚙️ HondaGo Admin</h1>
+    <div class="header-actions">
+      <button class="btn-icon" id="btn-dark" title="Modo oscuro">
+        <span class="material-icons" id="icon-dark">dark_mode</span>
+      </button>
+      <button class="btn-icon" id="btn-logout" title="Cerrar sesión" style="display:none">
+        <span class="material-icons">logout</span>
+      </button>
+      <a href="index.html" class="btn-icon" title="Volver a la app">
+        <span class="material-icons">arrow_back</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <div id="screen-login">
+    <div class="login-card">
+      <img src="img/logo-honda.png" alt="Honda Logo"/>
+      <h2>Panel Administrador</h2>
+      <p>Acceso exclusivo para gestión de catálogo y precios</p>
+      <input class="login-input" type="password" id="admin-pass" placeholder="Contraseña"
+        onkeydown="if(event.key==='Enter')intentarLogin()"/>
+      <button class="btn-primary" onclick="intentarLogin()">Entrar</button>
+      <p class="login-error" id="login-error">Contraseña incorrecta</p>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="screen-panel">
+
+    <!-- Sync status -->
+    <div class="sync-bar">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Conectado a Firestore</span>
+    </div>
+
+    <!-- SECCIÓN: FINANCIAMIENTO -->
+    <div class="section-card" style="margin-top:14px">
+      <div class="section-header">
+        <h2>📋 Financiamiento</h2>
+        <span class="badge-info">Links Drive</span>
+      </div>
+      <div class="fin-row">
+        <label>Oferta comercial del mes (URL Google Drive)</label>
+        <div class="fin-input-row">
+          <input class="fin-input" id="url-oferta" type="url"
+            placeholder="https://drive.google.com/file/d/.../view"/>
+          <button class="btn-save-fin" onclick="guardarUrlFin('oferta')">
+            <span class="material-icons" style="font-size:16px;vertical-align:middle">save</span>
+            Guardar
+          </button>
+        </div>
+      </div>
+      <div class="fin-row">
+        <label>Bonos e Incentivos (URL Google Drive)</label>
+        <div class="fin-input-row">
+          <input class="fin-input" id="url-descuentos" type="url"
+            placeholder="https://drive.google.com/file/d/.../view"/>
+          <button class="btn-save-fin" onclick="guardarUrlFin('descuentos')">
+            <span class="material-icons" style="font-size:16px;vertical-align:middle">save</span>
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: CATÁLOGO -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>🚗 Catálogo de Vehículos</h2>
+        <span class="badge-info" id="sync-models-label">Cargando...</span>
+      </div>
+      <div id="modelos-list">
+        <div style="text-align:center;padding:24px;color:var(--muted)">Cargando catálogo...</div>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px">
+      Los cambios se guardan en Firestore y se reflejan en la app en segundos.<br/>
+      No se requiere actualizar el Service Worker para ver los precios.
+    </p>
+  </div>
+
+  <!-- FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+  // ===========================
+  // FIREBASE
+  // ===========================
+  const firebaseConfig = {
+    apiKey:            "AIzaSyC3WZseiyASn9_8JmtSX-7UY0V__MmOGQI",
+    authDomain:        "hosndaguardias-7c69b.firebaseapp.com",
+    projectId:         "hondaguardias-7c69b",
+    storageBucket:     "hondaguardias-7c69b.appspot.com",
+    messagingSenderId: "333873832947",
+    appId:             "1:333873832947:web:18b0b6728ffb541ecf6886",
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // ===========================
+  // AUTH SIMPLE
+  // ===========================
+  // Cambia esta contraseña a la que tú quieras antes de subir a GitHub
+  const ADMIN_PASS = "HGo$Israel#2026!";
+  const SESSION_KEY = "hgo_gix_session_ok";
+
+  function intentarLogin() {
+    const val = document.getElementById("admin-pass").value;
+    const err = document.getElementById("login-error");
+    if (val === ADMIN_PASS) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      mostrarPanel();
+    } else {
+      err.style.display = "block";
+      document.getElementById("admin-pass").value = "";
+      setTimeout(() => { err.style.display = "none"; }, 2500);
+    }
+  }
+
+  function cerrarSesion() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById("screen-panel").style.display = "none";
+    document.getElementById("screen-login").style.display = "flex";
+    document.getElementById("btn-logout").style.display = "none";
+  }
+
+  function mostrarPanel() {
+    document.getElementById("screen-login").style.display = "none";
+    document.getElementById("screen-panel").style.display = "block";
+    document.getElementById("btn-logout").style.display = "flex";
+    cargarTodo();
+  }
+
+  window.addEventListener("load", () => {
+    aplicarDark();
+    if (sessionStorage.getItem(SESSION_KEY) === "1") mostrarPanel();
+    document.getElementById("btn-logout").onclick = cerrarSesion;
+    document.getElementById("btn-dark").onclick = toggleDark;
+    document.getElementById("admin-pass").focus();
+    verificarConexion();
+  });
+
+  // ===========================
+  // DARK MODE
+  // ===========================
+  function toggleDark() {
+    const on = !document.body.classList.contains("dark");
+    document.body.classList.toggle("dark", on);
+    localStorage.setItem("adminDark", on);
+    document.getElementById("icon-dark").textContent = on ? "light_mode" : "dark_mode";
+  }
+  function aplicarDark() {
+    const on = localStorage.getItem("adminDark") === "true";
+    document.body.classList.toggle("dark", on);
+    const ic = document.getElementById("icon-dark");
+    if (ic) ic.textContent = on ? "light_mode" : "dark_mode";
+  }
+
+  // ===========================
+  // CONEXIÓN
+  // ===========================
+  function verificarConexion() {
+    const dot   = document.getElementById("sync-dot");
+    const label = document.getElementById("sync-label");
+    window.addEventListener("online",  () => { dot.className = "sync-dot"; label.textContent = "Conectado a Firestore"; });
+    window.addEventListener("offline", () => { dot.className = "sync-dot offline"; label.textContent = "Sin conexión — cambios en espera"; });
+    if (!navigator.onLine) { dot.className = "sync-dot offline"; label.textContent = "Sin conexión"; }
+  }
+
+  // ===========================
+  // CARGA PRINCIPAL
+  // ===========================
+  let catalogoLocal = [];   // copia del JSON base
+  let firestoreData = {};   // { modeloNombre: { versiones:[...], fichas:{...} } }
+  let finUrls       = {};   // { oferta:"...", descuentos:"..." }
+
+  async function cargarTodo() {
+    mostrarLoading(true);
+    try {
+      // 1. Cargar JSON base
+      const r    = await fetch("json/precios.json");
+      const data = await r.json();
+      catalogoLocal = data.modelos || [];
+
+      // 2. Cargar overrides de Firestore
+      const snap = await db.collection("catalogo_admin").get();
+      snap.forEach(doc => { firestoreData[doc.id] = doc.data(); });
+
+      // 3. Cargar URLs financiamiento
+      const finSnap = await db.collection("config").doc("financiamiento").get();
+      if (finSnap.exists) {
+        finUrls = finSnap.data();
+        document.getElementById("url-oferta").value     = finUrls.oferta     || "";
+        document.getElementById("url-descuentos").value = finUrls.descuentos || "";
+      }
+
+      renderCatalogo();
+      document.getElementById("sync-models-label").textContent = `${catalogoLocal.length} modelos`;
+    } catch(e) {
+      console.error(e);
+      toast("Error cargando datos: " + e.message, "error");
+    }
+    mostrarLoading(false);
+  }
+
+  // ===========================
+  // RENDER CATÁLOGO
+  // ===========================
+  function mergedModelo(m) {
+    const fs = firestoreData[m.nombre] || {};
+    const versonesFs = fs.versiones || null;
+    const fichasFs   = fs.fichas    || null;
+    return {
+      ...m,
+      versiones: versonesFs || m.versiones,
+      fichas:    fichasFs   || m.fichas || {},
+    };
+  }
+
+  function renderCatalogo() {
+    const cont = document.getElementById("modelos-list");
+    cont.innerHTML = catalogoLocal.map(m => {
+      const merged = mergedModelo(m);
+      return renderModeloHTML(merged);
+    }).join("");
+  }
+
+  function renderModeloHTML(m) {
+    const versHTML = m.versiones.map((v, i) => renderVersionHTML(m.nombre, v, i)).join("");
+    const fichasHTML = renderFichasHTML(m);
+    return `
+      <div class="model-accordion" id="acc-${safe(m.nombre)}">
+        <div class="model-header" onclick="toggleAccordion('${safe(m.nombre)}')">
+          <div class="model-title">
+            <span class="model-name">${m.nombre}</span>
+            <span class="model-count">${m.versiones.length} versión(es)</span>
+          </div>
+          <span class="material-icons chevron" id="chev-${safe(m.nombre)}">expand_more</span>
+        </div>
+        <div class="model-body" id="body-${safe(m.nombre)}">
+          ${fichasHTML}
+          ${versHTML}
+          ${renderAgregarVersion(m.nombre)}
+        </div>
+      </div>`;
+  }
+
+  function renderVersionHTML(modeloNombre, v, idx) {
+    const hev = v.tipo === "hev" ? '<span class="badge-hev">⚡ HEV</span>' : "";
+    return `
+      <div class="version-row" id="ver-row-${safe(modeloNombre)}-${idx}">
+        <div class="ver-info">
+          <span class="ver-nombre">${v.nombre} ${v.año} ${hev}</span>
+          <span class="ver-meta">Tipo: ${v.tipo}</span>
+        </div>
+        <input class="precio-input"
+          id="precio-${safe(modeloNombre)}-${idx}"
+          type="number" min="0" step="100"
+          value="${v.precio}"
+          onkeydown="if(event.key==='Enter') guardarPrecio('${safe(modeloNombre)}', ${idx})"/>
+        <button class="btn-save-ver"
+          onclick="guardarPrecio('${safe(modeloNombre)}', ${idx})">
+          <span class="material-icons" style="font-size:16px;vertical-align:middle">save</span>
+        </button>
+        <button class="btn-del-ver"
+          onclick="eliminarVersion('${safe(modeloNombre)}', ${idx})">
+          <span class="material-icons" style="font-size:15px;vertical-align:middle">delete</span>
+        </button>
+      </div>`;
+  }
+
+  function renderFichasHTML(m) {
+    const tipos = Object.keys(m.fichas || {});
+    if (!tipos.length) return "";
+    const rows = tipos.map(tipo => `
+      <div class="ficha-row">
+        <label>📄 Ficha técnica — ${tipo.toUpperCase()}  (Google Drive)</label>
+        <div class="ficha-input-row">
+          <input class="ficha-input"
+            id="ficha-${safe(m.nombre)}-${tipo}"
+            type="url" value="${(m.fichas[tipo] || "")}"
+            placeholder="https://drive.google.com/file/d/.../view"/>
+          <button class="btn-test-ficha"
+            onclick="probarFicha('${safe(m.nombre)}', '${tipo}')">
+            <span class="material-icons" style="font-size:15px;vertical-align:middle">open_in_new</span>
+          </button>
+          <button class="btn-save-ficha"
+            onclick="guardarFicha('${safe(m.nombre)}', '${tipo}')">
+            <span class="material-icons" style="font-size:15px;vertical-align:middle">save</span>
+          </button>
+        </div>
+      </div>`).join("");
+    return rows;
+  }
+
+  function renderAgregarVersion(modeloNombre) {
+    return `
+      <div class="add-version-section">
+        <h4>➕ Agregar versión</h4>
+        <div class="add-row">
+          <input class="add-input" id="add-nombre-${safe(modeloNombre)}" type="text" placeholder="Nombre ej. Touring"/>
+          <input class="add-input" id="add-anio-${safe(modeloNombre)}"   type="number" placeholder="Año" value="2026" style="width:80px;min-width:70px;flex:none"/>
+          <input class="add-input" id="add-precio-${safe(modeloNombre)}" type="number" placeholder="Precio" style="width:110px;min-width:90px;flex:none"/>
+          <select class="add-select" id="add-tipo-${safe(modeloNombre)}">
+            <option value="gasolina">Gasolina</option>
+            <option value="hev">HEV ⚡</option>
+          </select>
+          <button class="btn-add-ver" onclick="agregarVersion('${safe(modeloNombre)}')">
+            <span class="material-icons" style="font-size:16px;vertical-align:middle">add</span>
+            Agregar
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // ===========================
+  // ACCORDION
+  // ===========================
+  function toggleAccordion(nombre) {
+    const body = document.getElementById("body-" + nombre);
+    const chev = document.getElementById("chev-" + nombre);
+    if (!body) return;
+    const open = body.classList.toggle("open");
+    if (chev) chev.classList.toggle("open", open);
+  }
+
+  // ===========================
+  // GUARDAR PRECIO
+  // ===========================
+  async function guardarPrecio(modeloNombreSafe, idx) {
+    const modeloNombre = unsafeNombre(modeloNombreSafe);
+    const merged = mergedModelo(catalogoLocal.find(m => m.nombre === modeloNombre));
+    const input  = document.getElementById(`precio-${modeloNombreSafe}-${idx}`);
+    const nuevo  = parseInt(input.value, 10);
+    if (isNaN(nuevo) || nuevo <= 0) { toast("Precio inválido", "error"); return; }
+
+    merged.versiones[idx].precio = nuevo;
+    await guardarModeloFirestore(modeloNombre, merged);
+    firestoreData[modeloNombre] = { ...firestoreData[modeloNombre], versiones: merged.versiones };
+    toast(`✅ Precio de ${merged.versiones[idx].nombre} actualizado`, "success");
+  }
+
+  // ===========================
+  // ELIMINAR VERSIÓN
+  // ===========================
+  async function eliminarVersion(modeloNombreSafe, idx) {
+    const modeloNombre = unsafeNombre(modeloNombreSafe);
+    const merged = mergedModelo(catalogoLocal.find(m => m.nombre === modeloNombre));
+    const ver    = merged.versiones[idx];
+    if (!confirm(`¿Eliminar "${ver.nombre} ${ver.año}"?`)) return;
+
+    merged.versiones.splice(idx, 1);
+    await guardarModeloFirestore(modeloNombre, merged);
+    firestoreData[modeloNombre] = { ...firestoreData[modeloNombre], versiones: merged.versiones };
+    reRenderModelo(modeloNombre, true);
+    toast("Versión eliminada", "info");
+  }
+
+  // ===========================
+  // AGREGAR VERSIÓN
+  // ===========================
+  async function agregarVersion(modeloNombreSafe) {
+    const modeloNombre = unsafeNombre(modeloNombreSafe);
+    const nombre = document.getElementById(`add-nombre-${modeloNombreSafe}`).value.trim();
+    const anio   = parseInt(document.getElementById(`add-anio-${modeloNombreSafe}`).value, 10);
+    const precio = parseInt(document.getElementById(`add-precio-${modeloNombreSafe}`).value, 10);
+    const tipo   = document.getElementById(`add-tipo-${modeloNombreSafe}`).value;
+
+    if (!nombre) { toast("Ingresa el nombre de la versión", "error"); return; }
+    if (isNaN(anio))   { toast("Ingresa el año", "error"); return; }
+    if (isNaN(precio) || precio <= 0) { toast("Ingresa el precio", "error"); return; }
+
+    const merged = mergedModelo(catalogoLocal.find(m => m.nombre === modeloNombre));
+    merged.versiones.push({ nombre, año: anio, precio, tipo });
+    // Si es HEV y el modelo no tenía la key de ficha HEV, la añadimos
+    if (tipo === "hev" && !merged.fichas.hev) merged.fichas.hev = "";
+
+    await guardarModeloFirestore(modeloNombre, merged);
+    firestoreData[modeloNombre] = { ...firestoreData[modeloNombre], versiones: merged.versiones, fichas: merged.fichas };
+    reRenderModelo(modeloNombre, true);
+    toast(`✅ Versión "${nombre} ${anio}" agregada`, "success");
+  }
+
+  // ===========================
+  // GUARDAR FICHA TÉCNICA
+  // ===========================
+  async function guardarFicha(modeloNombreSafe, tipo) {
+    const modeloNombre = unsafeNombre(modeloNombreSafe);
+    const url    = document.getElementById(`ficha-${modeloNombreSafe}-${tipo}`).value.trim();
+    const merged = mergedModelo(catalogoLocal.find(m => m.nombre === modeloNombre));
+    if (!merged.fichas) merged.fichas = {};
+    merged.fichas[tipo] = url;
+    await guardarModeloFirestore(modeloNombre, merged);
+    firestoreData[modeloNombre] = { ...firestoreData[modeloNombre], fichas: merged.fichas };
+    toast(`✅ Ficha ${tipo.toUpperCase()} del ${modeloNombre} guardada`, "success");
+  }
+
+  function probarFicha(modeloNombreSafe, tipo) {
+    const url = document.getElementById(`ficha-${modeloNombreSafe}-${tipo}`).value.trim();
+    if (!url) { toast("Primero ingresa el link", "info"); return; }
+    const preview = url.replace("/view", "/preview");
+    window.open(preview, "_blank");
+  }
+
+  // ===========================
+  // GUARDAR FINANCIAMIENTO
+  // ===========================
+  async function guardarUrlFin(tipo) {
+    const url = document.getElementById(`url-${tipo}`).value.trim();
+    mostrarLoading(true);
+    try {
+      await db.collection("config").doc("financiamiento").set({ ...finUrls, [tipo]: url }, { merge: true });
+      finUrls[tipo] = url;
+      toast(`✅ URL de ${tipo} guardada`, "success");
+    } catch(e) {
+      toast("Error: " + e.message, "error");
+    }
+    mostrarLoading(false);
+  }
+
+  // ===========================
+  // FIRESTORE HELPERS
+  // ===========================
+  async function guardarModeloFirestore(modeloNombre, merged) {
+    mostrarLoading(true);
+    try {
+      await db.collection("catalogo_admin").doc(modeloNombre).set({
+        versiones: merged.versiones,
+        fichas:    merged.fichas || {},
+        updatedAt: new Date().toISOString(),
+      });
+    } catch(e) {
+      toast("Error guardando: " + e.message, "error");
+    }
+    mostrarLoading(false);
+  }
+
+  // Re-renderiza un modelo individual sin recargar todo
+  function reRenderModelo(modeloNombre, mantenerAbierto = false) {
+    const safe_n = safe(modeloNombre);
+    const body   = document.getElementById("body-" + safe_n);
+    const wasOpen = body && body.classList.contains("open");
+    const merged  = mergedModelo(catalogoLocal.find(m => m.nombre === modeloNombre));
+    const acc     = document.getElementById("acc-" + safe_n);
+    if (acc) acc.outerHTML = renderModeloHTML(merged);
+    if (wasOpen || mantenerAbierto) {
+      const newBody = document.getElementById("body-" + safe_n);
+      const newChev = document.getElementById("chev-" + safe_n);
+      if (newBody) newBody.classList.add("open");
+      if (newChev) newChev.classList.add("open");
+    }
+  }
+
+  // ===========================
+  // UTILS
+  // ===========================
+  function safe(str) { return String(str).replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-]/g, ""); }
+  function unsafeNombre(safeName) {
+    const m = catalogoLocal.find(m => safe(m.nombre) === safeName);
+    return m ? m.nombre : safeName.replace(/_/g, " ");
+  }
+
+  function mostrarLoading(show) {
+    document.getElementById("loading").classList.toggle("show", show);
+  }
+
+  function toast(msg, tipo = "success") {
+    const t = document.createElement("div");
+    t.className = `toast ${tipo}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.remove(), 600); }, 2600);
+  }
+  </script>
+</body>
+</html>
