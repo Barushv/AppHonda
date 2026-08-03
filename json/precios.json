@@ -52,7 +52,7 @@
       "nombre": "HR-V",
       "imagen": "img/hrv.png",
       "fichas": {
-        "gasolina": "https://drive.google.com/file/d/1bfKX2Vcw6Mvxu4yohEjOCqylPMv2aJ4N/view?usp=sharing"
+        "gasolina": "https://drive.google.com/file/d/1TgXbURgxRjqA3H3QHzcz-9uS3sj5qVtM/view?usp=sharing"
       },
       "versiones": [
         { "nombre": "Uniq",    "año": 2027, "precio": 618900, "tipo": "gasolina" },
