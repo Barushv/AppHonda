@@ -4,11 +4,11 @@
       "nombre": "City",
       "imagen": "img/city.png",
       "fichas": {
-        "gasolina": ""
+        "gasolina": "https://drive.google.com/file/d/197ZrrU8Xn20Kji3nmWe2XL4EAgu6Ig0V/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Sport", "año": 2026, "precio": 408900, "tipo": "gasolina" },
-        { "nombre": "Prime", "año": 2026, "precio": 440900, "tipo": "gasolina" },
+        { "nombre": "Sport",   "año": 2026, "precio": 408900, "tipo": "gasolina" },
+        { "nombre": "Prime",   "año": 2026, "precio": 440900, "tipo": "gasolina" },
         { "nombre": "Touring", "año": 2026, "precio": 471900, "tipo": "gasolina" }
       ]
     },
@@ -16,12 +16,12 @@
       "nombre": "Civic",
       "imagen": "img/civic.png",
       "fichas": {
-        "gasolina": "",
-        "hev": ""
+        "gasolina": "https://drive.google.com/file/d/14q6fxV9Lis-4-DXfMn-pBlsGGF4aVBcM/view?usp=sharing",
+        "hev":      "https://drive.google.com/file/d/1LU8ngcErCP8PbnEM8eHm7Q4uqD5i_DQm/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "i-Style", "año": 2026, "precio": 605900, "tipo": "gasolina" },
-        { "nombre": "Sport HEV", "año": 2026, "precio": 709900, "tipo": "hev" },
+        { "nombre": "i-Style",     "año": 2026, "precio": 605900, "tipo": "gasolina" },
+        { "nombre": "Sport HEV",   "año": 2026, "precio": 709900, "tipo": "hev" },
         { "nombre": "Touring HEV", "año": 2026, "precio": 759900, "tipo": "hev" }
       ]
     },
@@ -29,11 +29,11 @@
       "nombre": "Accord",
       "imagen": "img/accord.png",
       "fichas": {
-        "gasolina": "",
-        "hev": ""
+        "gasolina": "https://drive.google.com/file/d/1hGKG59wGfwLllrJq1rBHJmjXfGza3HSq/view?usp=sharing",
+        "hev":      "https://drive.google.com/file/d/1LqvxNl45L-l3Ad9CaG6x9mGT8V0sbyxM/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Prime", "año": 2025, "precio": 775900, "tipo": "gasolina" },
+        { "nombre": "Prime",       "año": 2025, "precio": 775900, "tipo": "gasolina" },
         { "nombre": "Touring HEV", "año": 2025, "precio": 915900, "tipo": "hev" }
       ]
     },
@@ -41,10 +41,10 @@
       "nombre": "BR-V",
       "imagen": "img/brv.png",
       "fichas": {
-        "gasolina": ""
+        "gasolina": "https://drive.google.com/file/d/1iF1RoYMf6uMe97VAaMzsBIc0w2r0L2i8/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Uniq", "año": 2026, "precio": 498900, "tipo": "gasolina" },
+        { "nombre": "Uniq",    "año": 2026, "precio": 498900, "tipo": "gasolina" },
         { "nombre": "Touring", "año": 2026, "precio": 539900, "tipo": "gasolina" }
       ]
     },
@@ -52,25 +52,25 @@
       "nombre": "HR-V",
       "imagen": "img/hrv.png",
       "fichas": {
-        "gasolina": ""
+        "gasolina": "https://drive.google.com/file/d/1bfKX2Vcw6Mvxu4yohEjOCqylPMv2aJ4N/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Uniq", "año": 2026, "precio": 610900, "tipo": "gasolina" },
-        { "nombre": "Sport", "año": 2026, "precio": 650900, "tipo": "gasolina" },
-        { "nombre": "Touring", "año": 2026, "precio": 680900, "tipo": "gasolina" }
+        { "nombre": "Uniq",    "año": 2027, "precio": 618900, "tipo": "gasolina" },
+        { "nombre": "Sport",   "año": 2027, "precio": 658900, "tipo": "gasolina" },
+        { "nombre": "Touring", "año": 2027, "precio": 688900, "tipo": "gasolina" }
       ]
     },
     {
       "nombre": "CR-V",
       "imagen": "img/crv.png",
       "fichas": {
-        "gasolina": "",
-        "hev": ""
+        "gasolina": "https://drive.google.com/file/d/1kYU5gGmiLbt28eiVCn44qCpbxwySvNpP/view?usp=sharing",
+        "hev":      "https://drive.google.com/file/d/1jiTNPpnW_OGs6foRC6ex86Vv6x_sFAs-/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Turbo Plus", "año": 2026, "precio": 822900, "tipo": "gasolina" },
-        { "nombre": "Touring", "año": 2026, "precio": 868900, "tipo": "gasolina" },
-        { "nombre": "Touring HEV", "año": 2026, "precio": 957900, "tipo": "hev" },
+        { "nombre": "Turbo Plus",        "año": 2026, "precio": 822900, "tipo": "gasolina" },
+        { "nombre": "Touring",           "año": 2026, "precio": 868900, "tipo": "gasolina" },
+        { "nombre": "Touring HEV",       "año": 2026, "precio": 957900, "tipo": "hev" },
         { "nombre": "Sport Touring HEV", "año": 2026, "precio": 985900, "tipo": "hev" }
       ]
     },
@@ -78,10 +78,10 @@
       "nombre": "Pilot",
       "imagen": "img/pilot.png",
       "fichas": {
-        "gasolina": ""
+        "gasolina": "https://drive.google.com/file/d/1y1KrcUTVGpDjcBcXXnISpkD4ocrCTpPI/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Touring", "año": 2026, "precio": 1240900, "tipo": "gasolina" },
+        { "nombre": "Touring",       "año": 2026, "precio": 1240900, "tipo": "gasolina" },
         { "nombre": "Black Edition", "año": 2026, "precio": 1270900, "tipo": "gasolina" }
       ]
     },
@@ -89,10 +89,10 @@
       "nombre": "Odyssey",
       "imagen": "img/odyssey.png",
       "fichas": {
-        "gasolina": ""
+        "gasolina": "https://drive.google.com/file/d/1QfoKcstb49wyLIq_VOQCxvJbOzHlsxlM/view?usp=sharing"
       },
       "versiones": [
-        { "nombre": "Touring", "año": 2026, "precio": 1202900, "tipo": "gasolina" },
+        { "nombre": "Touring",       "año": 2026, "precio": 1202900, "tipo": "gasolina" },
         { "nombre": "Black Edition", "año": 2026, "precio": 1232900, "tipo": "gasolina" }
       ]
     },
@@ -100,9 +100,11 @@
       "nombre": "Prelude",
       "imagen": "img/prelude.png",
       "fichas": {
-        "hev": ""
+        "hev": "https://drive.google.com/file/d/197qfQv0lBFn1b5jox1UIEkdBAtOlPACd/view?usp=sharing"
       },
-      "versiones": [{ "nombre": "HEV", "año": 2026, "precio": 949900, "tipo": "hev" }]
+      "versiones": [
+        { "nombre": "HEV", "año": 2026, "precio": 949900, "tipo": "hev" }
+      ]
     }
   ]
 }
