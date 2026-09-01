@@ -3,7 +3,7 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "HondaGo-Agosto2026";
+const CACHE_NAME = "HondaGo-Septiembre2026";
 
 // Archivos base a precachear
 const urlsToCache = ["index.html", "css/styles.css", "js/app.js", "img/logo-honda.png", "img/icono-pwa.png", "img/guardias.png", "json/precios.json"];
