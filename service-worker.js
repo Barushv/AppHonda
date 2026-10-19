@@ -2,18 +2,76 @@
 // SERVICE WORKER - HondaGo
 // =====================================
 
-// ¡CAMBIA este nombre cada vez que publiques cambios importantes!
-const CACHE_NAME = "HondaGo-Septiembre2026";
+// ¡CAMBIA este nombre cada vez que publiques cambios! (dispara el aviso "Nueva versión")
+const CACHE_NAME = "HondaGo-v3-2026-10-19";
+const CDN_CACHE = "HondaGo-cdn-v1";
+const DEV = ["localhost", "127.0.0.1"].includes(self.location.hostname) || /^192\.168\./.test(self.location.hostname);
 
-// Archivos base a precachear
-const urlsToCache = ["index.html", "css/styles.css", "js/app.js", "img/logo-honda.png", "img/icono-pwa.png", "img/guardias.png", "json/precios.json"];
+const APP_SHELL = [
+  "./",
+  "index.html",
+  "precios.html",
+  "gestion-hgo.html",
+  "manifest.json",
+  "css/styles.css",
+  "js/app.js",
+  "js/firebase.js",
+  "js/ui.js",
+  "js/config.js",
+  "js/catalogo.js",
+  "js/vehiculos.js",
+  "js/financiamiento.js",
+  "js/financiamiento-data.js",
+  "js/leads.js",
+  "js/leads-store.js",
+  "js/agenda.js",
+  "js/pwa.js",
+  "js/precios.js",
+  "js/gestion.js",
+  "js/tarjeta.js",
+  "js/vendor/qrcode.min.js",
+  "img/asesor.webp",
+  "json/precios.json",
+  "img/logo-honda.webp",
+  "img/icon-192.png",
+  "img/icon-512.png",
+  "img/city.webp",
+  "img/civic.webp",
+  "img/accord.webp",
+  "img/brv.webp",
+  "img/hrv.webp",
+  "img/crv.webp",
+  "img/pilot.webp",
+  "img/odyssey.webp",
+  "img/prelude.webp",
+];
 
-// ---------- Helpers ----------
+// Librerías externas que sí se guardan para funcionar sin conexión
+const CDN_HOSTS = ["www.gstatic.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)));
+  // Queda en espera hasta que el usuario toque "Actualizar"
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== CDN_CACHE).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING" || event.data?.action === "skipWaiting") self.skipWaiting();
+});
+
 async function networkFirst(req) {
   try {
     const res = await fetch(req, { cache: "no-store" });
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(req, res.clone());
+    if (res.ok) (await caches.open(CACHE_NAME)).put(req, res.clone());
     return res;
   } catch (e) {
     const cached = await caches.match(req);
@@ -23,68 +81,35 @@ async function networkFirst(req) {
 }
 
 async function cacheFirst(req) {
-  const cached = await caches.match(req);
+  const cached = await caches.match(req, { ignoreSearch: true });
   return cached || fetch(req);
 }
 
-// ---------- Instalación ----------
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(urlsToCache)));
-  // Opcional: instala y queda en 'waiting' hasta que la página pida skipWaiting
-  //self.skipWaiting(); // si quieres activar siempre de inmediato, descomenta
-});
+async function staleWhileRevalidate(req) {
+  const cache = await caches.open(CDN_CACHE);
+  const cached = await cache.match(req);
+  const red = fetch(req)
+    .then((res) => {
+      if (res.ok || res.type === "opaque") cache.put(req, res.clone());
+      return res;
+    })
+    .catch(() => cached);
+  return cached || red;
+}
 
-// ---------- Activación ----------
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)));
-      await self.clients.claim(); // <-- toma control inmediato
-    })(),
-  );
-});
-
-// ---------- Mensajes desde la página ----------
-self.addEventListener("message", (event) => {
-  if (event.data === "SKIP_WAITING" || event.data?.action === "skipWaiting") {
-    self.skipWaiting();
-  }
-});
-
-// ---------- Fetch ----------
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  const path = url.pathname;
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
 
-  // PDFs: RED PRIMERO -> si hay internet, baja el nuevo y lo guarda
-  if (/\/pdf\/[^\/]+\.pdf(\?.*)?$/.test(path)) {
-    event.respondWith(
-      (async () => {
-        try {
-          // cache-bypass a nivel HTTP cache del navegador
-          const req = new Request(event.request.url, { cache: "reload" });
-          const fresh = await fetch(req);
-          const cache = await caches.open(CACHE_NAME);
-          // guardamos bajo la request original (con/ sin query)
-          cache.put(event.request, fresh.clone());
-          return fresh;
-        } catch (err) {
-          const cached = await caches.match(event.request);
-          if (cached) return cached;
-          throw err;
-        }
-      })(),
-    );
-    return;
+  if (url.origin === self.location.origin) {
+    // En local (pruebas) y para el catálogo base: red primero, así siempre se ve lo último
+    if (DEV || url.pathname.endsWith("/json/precios.json")) return event.respondWith(networkFirst(req));
+    return event.respondWith(cacheFirst(req));
   }
 
-  // precios.json: red primero
-  if (path.endsWith("/json/precios.json")) {
-    event.respondWith(networkFirst(event.request));
-    return;
+  // Firebase (Firestore/Auth) y Drive van directo a la red: no se interceptan
+  if (CDN_HOSTS.includes(url.hostname) && !url.pathname.includes("/__/")) {
+    event.respondWith(staleWhileRevalidate(req));
   }
-
-  // Resto: caché primero
-  event.respondWith(cacheFirst(event.request));
 });

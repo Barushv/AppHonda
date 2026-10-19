@@ -1,430 +1,386 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="auth-pending">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>HondaGo</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>HondaGo</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="img/icon-192.png" />
+    <link rel="apple-touch-icon" href="img/icon-192.png" />
 
-  <!-- Manifest PWA -->
-  <link rel="manifest" href="manifest.json" />
+    <script>
+      // Tema antes de pintar (evita parpadeo)
+      try {
+        var t = localStorage.getItem("hondago_tema") || (localStorage.getItem("modoOscuro") === "true" ? "oscuro" : "auto");
+        if (t !== "auto") document.documentElement.setAttribute("data-theme", t === "oscuro" ? "dark" : "light");
+      } catch (e) {}
+    </script>
 
-  <!-- CSS principal -->
-  <link rel="stylesheet" href="css/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
 
-  <!-- Ícono PWA -->
-  <link rel="icon" href="img/icono-pwa.png" />
-  <link rel="apple-touch-icon" href="img/icono-pwa.png" />
+  <body>
+    <!-- SPLASH (mientras se verifica la sesión) -->
+    <div class="splash"><img src="img/icon-512.png" alt="HondaGo" /></div>
 
-  <!-- Imágenes se cargan dinámicamente al seleccionar modelo -->
-
-  <!-- FullCalendar CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
-
-  <!-- Google Material Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-</head>
-
-<body>
-  <div class="app-container">
-
-    <!-- HEADER -->
-    <header class="app-header">
-      <div class="header-center">
+    <!-- LOGIN -->
+    <section id="login" class="login" hidden>
+      <div class="login-card">
+        <img src="img/logo-honda.webp" alt="Honda" class="login-logo" />
         <h1>HondaGo</h1>
+        <p>Inicia sesión con tu cuenta de Google para continuar.</p>
+        <button class="btn btn-primary btn-block" data-login>
+          <span class="ms">login</span> Entrar con Google
+        </button>
+        <p class="login-error" data-login-error></p>
       </div>
-      <button id="toggle-darkmode" class="darkmode-btn" aria-label="Cambiar modo">
-        <span class="material-icons" id="icon-darkmode">dark_mode</span>
-      </button>
-    </header>
+    </section>
 
-    <main class="main-content">
+    <div class="app">
+      <header class="app-header">
+        <h1 id="app-titulo">HondaGo</h1>
+      </header>
 
-      <!-- ===================== TAB: VEHÍCULOS ===================== -->
-      <section id="vehiculos" class="tab-section active">
-        <img src="img/logo-honda.png" alt="Logo Honda" id="logo-vehiculo" />
-        <h2>Vehículos</h2>
+      <div id="update-banner" class="update-banner" hidden>
+        <span class="ms">system_update</span>
+        <span>Nueva versión disponible</span>
+        <button class="btn btn-sm btn-light" id="btn-actualizar">Actualizar</button>
+      </div>
 
-        <div id="selector-menu">
-          <select id="modelo" onchange="cargarVersiones()">
-            <option value="">--Selecciona modelo--</option>
-          </select>
-          <select id="version" onchange="actualizarPrecio()">
-            <option value="">--Selecciona versión--</option>
-          </select>
-        </div>
+      <main class="main">
+        <!-- ===================== VEHÍCULOS ===================== -->
+        <section id="tab-vehiculos" class="tab active" data-titulo="Vehículos">
+          <div class="modelos-strip" id="modelos-strip" role="listbox" aria-label="Modelos"></div>
 
-        <img id="imagen" src="" alt="Vehículo" />
-        <div id="info-modelo"></div>
-
-        <!-- Formulario cliente -->
-        <div id="form-whatsapp">
-          <h3>Enviar al cliente</h3>
-
-          <label for="nombre-cliente">Nombre del cliente</label>
-          <input type="text" id="nombre-cliente" placeholder="Ej. Juan Pérez" autocomplete="name" />
-
-          <label for="telefono-cliente">Número WhatsApp</label>
-          <input type="tel" id="telefono-cliente" placeholder="52XXXXXXXXXX" />
-
-          <!-- Botón WhatsApp -->
-          <button class="btn-action btn-whatsapp" id="btn-enviar" type="button" onclick="enviarACliente()" disabled>
-            💬 Enviar mensaje WhatsApp
-          </button>
-
-          <!-- Botón Ficha técnica (se muestra solo si hay link) -->
-          <button class="btn-action btn-ficha" id="btn-ficha" type="button" onclick="abrirFichaTecnica()" style="display:none">
-            📄 Enviar ficha técnica
-          </button>
-        </div>
-      </section>
-
-      <!-- ===================== TAB: FINANCIAMIENTO ===================== -->
-      <section id="financiamiento" class="tab-section">
-        <h2>Financiamiento</h2>
-
-        <div class="financiamiento-card">
-          <div class="fin-icon">📋</div>
-          <div class="fin-info">
-            <h3>Oferta comercial del mes</h3>
-            <p>Consulta las condiciones y promociones vigentes</p>
+          <div class="modelo-detalle" id="modelo-detalle" hidden>
+            <img id="modelo-img" class="modelo-img" alt="" />
+            <div class="modelo-head">
+              <h2 id="modelo-nombre"></h2>
+              <div class="segmented" id="anio-chips"></div>
+            </div>
+            <div class="versiones" id="versiones"></div>
           </div>
-          <button class="btn-action btn-fin" onclick="abrirPdfFinanciamiento('oferta')">
-            <span class="material-icons">open_in_new</span> Abrir
-          </button>
-        </div>
 
-        <div class="financiamiento-card">
-          <div class="fin-icon">🎁</div>
-          <div class="fin-info">
-            <h3>Bonos e Incentivos</h3>
-            <p>Descuentos y bonos aplicables del período</p>
+          <div class="empty" id="vehiculo-vacio">
+            <span class="ms">directions_car</span>
+            <p>Elige un modelo para ver sus versiones y precios</p>
           </div>
-          <button class="btn-action btn-fin" onclick="abrirPdfFinanciamiento('descuentos')">
-            <span class="material-icons">open_in_new</span> Abrir
-          </button>
-        </div>
 
-        <p class="fin-nota">Los documentos se abren en el visor de Google Docs para máxima compatibilidad en Android.
-        </p>
-      </section>
+          <div class="card form-cliente">
+            <h3>Enviar al cliente</h3>
+            <div class="resumen" id="resumen-sel">Selecciona una versión</div>
 
-      <!-- ===================== TAB: MÁS ===================== -->
-      <section id="mas" class="tab-section">
-        <div class="menu-mas">
-          <button class="btn-action btn-mas" onclick="mostrarSubseccionMas('calendario')">
-            <span class="material-icons">calendar_month</span>
-            Guardias y Recordatorios
-          </button>
-          <button class="btn-action btn-mas" onclick="mostrarSubseccionMas('leads')">
-            <span class="material-icons">group</span>
-            Leads <span id="lead-count-badge" class="lead-badge">0</span>
-          </button>
-          <button class="btn-action btn-mas" onclick="mostrarSubseccionMas('creditos')">
-            <span class="material-icons">info</span>
-            Créditos y Contacto
-          </button>
-          <button id="btn-mas-actualizar" class="btn-action btn-mas" style="display:none"
-            onclick="mostrarSubseccionMas('actualizacion')">
-            <span class="material-icons">update</span>
-            Actualizar App
-          </button>
-        </div>
+            <label for="nombre-cliente">Nombre del cliente</label>
+            <input type="text" id="nombre-cliente" placeholder="Ej. Juan Pérez" autocomplete="off" autocapitalize="words" />
 
-        <!-- SUB: CALENDARIO -->
-        <div id="sub-mas-calendario" class="sub-mas" style="display:none">
-          <div class="sub-header">
-            <button class="btn-back" onclick="volverMenuMas()">
-              <span class="material-icons">arrow_back</span>
+            <label for="telefono-cliente">WhatsApp</label>
+            <input type="tel" id="telefono-cliente" placeholder="999 123 4567" inputmode="tel" autocomplete="off" />
+            <p class="hint" id="tel-hint">10 dígitos. Se agrega +52 automáticamente.</p>
+
+            <button class="btn btn-wa btn-block" id="btn-enviar" disabled>
+              <span class="ms">chat</span> Enviar información por WhatsApp
             </button>
-            <h2>Mis guardias</h2>
-            <button class="btn-rol-mes" onclick="abrirModalRolMes()" title="Cargar rol del mes">
-              <span class="material-icons">upload_file</span>
-              Cargar rol
+            <button class="btn btn-secondary btn-block" id="btn-ficha" disabled>
+              <span class="ms">description</span> Enviar solo ficha técnica
             </button>
           </div>
-          <div id="calendario-guardias" style="width:100%"></div>
-        </div>
+        </section>
 
-        <!-- SUB: LEADS CRM -->
-        <div id="sub-mas-leads" class="sub-mas" style="display:none">
-          <div class="sub-header">
-            <button class="btn-back" onclick="volverMenuMas()">
-              <span class="material-icons">arrow_back</span>
-            </button>
-            <h2>Leads <span id="lead-count" class="lead-count-num">0</span></h2>
+        <!-- ===================== FINANCIAMIENTO ===================== -->
+        <section id="tab-financiamiento" class="tab" data-titulo="Financiamiento">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Vigencia</span>
+              <h2 id="fin-vigencia">—</h2>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btn-editar-fin"><span class="ms">edit</span> Editar</button>
+          </div>
+          <div id="fin-list" class="list"></div>
+          <p class="nota">Los documentos se abren en el visor de Google Drive.</p>
+        </section>
+
+        <!-- ===================== LEADS ===================== -->
+        <section id="tab-leads" class="tab" data-titulo="Leads">
+          <div class="stats" id="lead-stats"></div>
+
+          <div class="toolbar">
+            <div class="search">
+              <span class="ms">search</span>
+              <input id="lead-search" type="search" placeholder="Buscar nombre, teléfono o modelo" />
+            </div>
+            <button class="icon-btn" id="btn-lead-seleccionar" title="Seleccionar"><span class="ms">checklist</span></button>
+            <button class="icon-btn" id="btn-lead-menu" title="Respaldo"><span class="ms">more_vert</span></button>
           </div>
 
-          <!-- Toolbar -->
-          <div class="lead-toolbar">
-            <input id="lead-search" type="search" placeholder="Buscar nombre / tel / modelo"
-              oninput="setLeadSearch(this.value)">
-            <select id="lead-size" onchange="setLeadPageSize(this.value)">
-              <option value="25">25</option>
-              <option value="50" selected>50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
+          <div class="chips" id="lead-chips"></div>
+          <div id="lead-list" class="list"></div>
+          <button class="btn btn-ghost btn-block" id="lead-mas" hidden>Ver más</button>
 
-          <!-- Filtro por estado -->
-          <div class="lead-status-filter">
-            <button class="status-chip active" data-status="" onclick="setLeadStatusFilter(this, '')">Todos</button>
-            <button class="status-chip" data-status="nuevo" onclick="setLeadStatusFilter(this, 'nuevo')">🆕
-              Nuevo</button>
-            <button class="status-chip" data-status="contactado" onclick="setLeadStatusFilter(this, 'contactado')">📞
-              Contactado</button>
-            <button class="status-chip" data-status="seguimiento" onclick="setLeadStatusFilter(this, 'seguimiento')">🔄
-              Seguimiento</button>
-            <button class="status-chip" data-status="cita" onclick="setLeadStatusFilter(this, 'cita')">📅 Cita</button>
-            <button class="status-chip" data-status="vendido" onclick="setLeadStatusFilter(this, 'vendido')">✅
-              Vendido</button>
-            <button class="status-chip" data-status="descartado" onclick="setLeadStatusFilter(this, 'descartado')">❌
-              Descartado</button>
-          </div>
-
-          <!-- Lista de leads -->
-          <div id="lead-list"></div>
-
-          <!-- Barra selección -->
-          <div id="lead-selection" class="selection-bar">
+          <div class="selection-bar" id="lead-selection" hidden>
             <span><strong id="lead-selected-count">0</strong> seleccionado(s)</span>
-            <button class="btn btn-danger" onclick="deleteSelectedLeads()">🗑️ Borrar</button>
+            <button class="btn btn-ghost btn-sm" id="btn-sel-cancelar">Cancelar</button>
+            <button class="btn btn-danger btn-sm" id="btn-sel-borrar"><span class="ms">delete</span> Borrar</button>
           </div>
+          <input type="file" id="lead-restore-file" accept="application/json" hidden />
+        </section>
 
-          <!-- Paginador -->
-          <div id="lead-pager" class="lead-pager">
-            <button class="btn btn-outline" onclick="prevLeadPage()">⬅️</button>
-            <span id="lead-page-info">Pág 1 / 1</span>
-            <button class="btn btn-outline" onclick="nextLeadPage()">➡️</button>
+        <!-- ===================== AGENDA ===================== -->
+        <section id="tab-agenda" class="tab" data-titulo="Agenda">
+          <div id="agenda-hoy" class="agenda-hoy"></div>
+          <div class="agenda-actions">
+            <button class="btn btn-ghost btn-sm" id="btn-nuevo-evento"><span class="ms">add</span> Nuevo</button>
+            <button class="btn btn-ghost btn-sm" id="btn-rol-mes"><span class="ms">calendar_add_on</span> Cargar rol del mes</button>
           </div>
+          <div class="card cal-card"><div id="calendario"></div></div>
+        </section>
 
-          <!-- Acciones -->
-          <div class="lead-actions-row">
-            <button class="btn btn-ghost" onclick="exportLeadsCSV()">⬇️ CSV</button>
-            <button class="btn btn-ghost" onclick="exportLeadsJSON()">💾 JSON</button>
-            <button class="btn btn-outline" onclick="openRestoreLeadsDialog()">↩️ Restaurar</button>
-            <button class="btn btn-outline-danger" onclick="clearLeads()">🧹 Borrar todo</button>
-          </div>
-          <input type="file" id="lead-restore-file" accept="application/json" style="display:none" />
-        </div>
-
-        <!-- SUB: CRÉDITOS -->
-        <div id="sub-mas-creditos" class="sub-mas" style="display:none">
-          <div class="sub-header">
-            <button class="btn-back" onclick="volverMenuMas()">
-              <span class="material-icons">arrow_back</span>
+        <!-- ===================== MÁS ===================== -->
+        <section id="tab-mas" class="tab" data-titulo="Más">
+          <div class="list group">
+            <button class="row" id="btn-mi-tarjeta">
+              <img src="img/asesor.webp" alt="" class="row-avatar" />
+              <span class="row-main"><strong>Mi tarjeta</strong><small>Muestra tu QR o envía tu contacto al cliente</small></span>
+              <span class="ms">chevron_right</span>
             </button>
-            <h2>Créditos</h2>
           </div>
-          <div class="creditos-container">
-            <img src="img/logo-honda.png" alt="Honda Logo" class="logo-creditos" />
-            <h2>HondaGo</h2>
-            <p><strong>Desarrollado por:</strong> Israel Ortiz</p>
-            <p><strong>Versión:</strong> 2.0 · 2026</p>
-            <p><strong>Correo:</strong> fortiz.hondamontejo@gmail.com</p>
-            <p><strong>Facebook:</strong> <a href="https://fb.com/honda.israelortiz"
-                target="_blank">fb.com/honda.israelortiz</a></p>
-            <p class="footer-copy">© HondaGo · Todos los derechos reservados</p>
-          </div>
-        </div>
 
-        <!-- SUB: ACTUALIZACIÓN -->
-        <div id="sub-mas-actualizacion" class="sub-mas" style="display:none">
-          <div class="sub-header">
-            <button class="btn-back" onclick="volverMenuMas()">
-              <span class="material-icons">arrow_back</span>
+          <div class="list group">
+            <a class="row" href="precios.html">
+              <span class="ms row-icon">sell</span>
+              <span class="row-main"><strong>Precios y versiones</strong><small>Agregar año-modelo, versiones y fichas</small></span>
+              <span class="ms">chevron_right</span>
+            </a>
+            <a class="row" href="gestion-hgo.html">
+              <span class="ms row-icon">admin_panel_settings</span>
+              <span class="row-main"><strong>Gestión</strong><small>Financiamiento y catálogo desde la web</small></span>
+              <span class="ms">chevron_right</span>
+            </a>
+          </div>
+
+          <div class="list group">
+            <div class="row">
+              <span class="ms row-icon">contrast</span>
+              <span class="row-main"><strong>Tema</strong></span>
+              <div class="segmented segmented-sm" id="tema-switch">
+                <button data-tema="auto">Auto</button>
+                <button data-tema="claro">Claro</button>
+                <button data-tema="oscuro">Oscuro</button>
+              </div>
+            </div>
+            <div class="row">
+              <span class="ms row-icon">cloud_sync</span>
+              <span class="row-main"><strong>Sincronización</strong><small id="sync-estado">Conectando…</small></span>
+            </div>
+            <button class="row" id="btn-mas-actualizar" hidden>
+              <span class="ms row-icon">system_update</span>
+              <span class="row-main"><strong>Actualizar app</strong><small>Hay una nueva versión lista</small></span>
+              <span class="ms">chevron_right</span>
             </button>
-            <h2>Actualizar App</h2>
           </div>
-          <div id="actualizacion-info">
-            <strong>Nueva versión disponible</strong>
-            <ul id="lista-cambios"></ul>
-            <button id="btn-actualizar">Actualizar y recargar</button>
+
+          <div class="card creditos">
+            <img src="img/logo-honda.webp" alt="Honda" />
+            <h3>HondaGo</h3>
+            <p id="creditos-texto"></p>
           </div>
+
+          <div class="list group">
+            <button class="row row-danger" id="btn-logout">
+              <span class="ms row-icon">logout</span>
+              <span class="row-main"><strong>Cerrar sesión</strong><small id="sesion-email"></small></span>
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <nav class="tab-bar">
+        <button data-tab="vehiculos" class="active"><span class="ms">directions_car</span><span>Vehículos</span></button>
+        <button data-tab="financiamiento"><span class="ms">request_quote</span><span>Ofertas</span></button>
+        <button data-tab="leads"><span class="ms">groups</span><span>Leads</span></button>
+        <button data-tab="agenda"><span class="ms">calendar_month</span><span>Agenda</span><i class="tab-badge" id="badge-agenda" hidden></i></button>
+        <button data-tab="mas"><span class="ms">menu</span><span>Más</span></button>
+      </nav>
+    </div>
+
+    <!-- ===================== HOJA: DETALLE DEL LEAD ===================== -->
+    <div class="sheet" id="sheet-lead" hidden>
+      <div class="sheet-panel">
+        <div class="sheet-grab"></div>
+        <div class="sheet-header">
+          <h3 id="ld-nombre">Lead</h3>
+          <button class="icon-btn" data-close><span class="ms">close</span></button>
+        </div>
+        <div class="ld-quick">
+          <a class="btn btn-wa" id="ld-wa" target="_blank" rel="noopener"><span class="ms">chat</span> WhatsApp</a>
+          <a class="btn btn-ghost" id="ld-tel"><span class="ms">call</span> Llamar</a>
+        </div>
+        <dl class="ld-info">
+          <div><dt>Teléfono</dt><dd id="ld-telefono"></dd></div>
+          <div><dt>Vehículo</dt><dd id="ld-vehiculo"></dd></div>
+          <div><dt>Precio</dt><dd id="ld-precio"></dd></div>
+          <div><dt>Registrado</dt><dd id="ld-fecha"></dd></div>
+        </dl>
+
+        <label class="field-label" for="ld-status">Estado</label>
+        <div class="status-picker" id="ld-status"></div>
+
+        <div class="seguimiento-box" id="ld-seguimiento"></div>
+
+        <label class="field-label">Notas</label>
+        <div class="nota-add">
+          <textarea id="ld-nota-input" rows="2" placeholder="Escribe una nota de seguimiento…"></textarea>
+          <button class="icon-btn icon-btn-primary" id="btn-nota-add" title="Agregar nota"><span class="ms">send</span></button>
+        </div>
+        <div id="ld-notas" class="notas"></div>
+      </div>
+    </div>
+
+    <!-- ===================== HOJA: EDITAR NOTA ===================== -->
+    <div class="sheet sheet-center" id="sheet-nota" hidden>
+      <div class="sheet-panel dialog">
+        <h3>Editar nota</h3>
+        <textarea id="edit-nota-texto" rows="4"></textarea>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" data-close>Cancelar</button>
+          <button class="btn btn-primary" id="btn-nota-guardar">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== HOJA: SEGUIMIENTO ===================== -->
+    <div class="sheet sheet-center" id="sheet-seguimiento" hidden>
+      <div class="sheet-panel dialog">
+        <h3 id="seg-titulo-h">Agendar seguimiento</h3>
+        <label class="field-label" for="seg-titulo">Recordatorio</label>
+        <input type="text" id="seg-titulo" />
+        <div class="field-row">
+          <div><label class="field-label" for="seg-fecha">Fecha</label><input type="date" id="seg-fecha" /></div>
+          <div><label class="field-label" for="seg-hora">Hora</label><input type="time" id="seg-hora" /></div>
+        </div>
+        <div class="quick-dates" id="seg-rapidas">
+          <button data-dias="0">Hoy</button><button data-dias="1">Mañana</button><button data-dias="3">En 3 días</button><button data-dias="7">En 1 semana</button>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" data-close>Ahora no</button>
+          <button class="btn btn-primary" id="btn-seg-guardar">Agendar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== HOJA: EVENTO (guardia / recordatorio) ===================== -->
+    <div class="sheet" id="sheet-evento" hidden>
+      <div class="sheet-panel">
+        <div class="sheet-grab"></div>
+        <div class="sheet-header">
+          <h3 id="ev-titulo-h">Nuevo evento</h3>
+          <button class="icon-btn" data-close><span class="ms">close</span></button>
+        </div>
+        <div class="segmented segmented-block" id="ev-tipo">
+          <button data-tipo="guardia" class="active">Guardia</button>
+          <button data-tipo="recordatorio">Recordatorio</button>
+        </div>
+        <label class="field-label" for="ev-fecha">Fecha</label>
+        <input type="date" id="ev-fecha" />
+
+        <div id="ev-sec-guardia">
+          <label class="field-label">Turno</label>
+          <div class="segmented segmented-block" id="ev-turno">
+            <button data-turno="am" class="active">☀️ AM · 8–14 h</button>
+            <button data-turno="pm">🌙 PM · 14–20 h</button>
+          </div>
+          <label class="field-label" for="ev-nombre">Asesor</label>
+          <input type="text" id="ev-nombre" />
         </div>
 
-      </section>
-    </main>
-
-    <!-- MENÚ INFERIOR -->
-    <nav class="tab-bar">
-      <button onclick="cambiarTab('vehiculos')" id="tab-vehiculos" class="active">
-        <span class="material-icons">directions_car</span>
-        <span>Vehículos</span>
-      </button>
-      <button onclick="cambiarTab('financiamiento')" id="tab-financiamiento">
-        <span class="material-icons">work</span>
-        <span>Financiamiento</span>
-      </button>
-      <button onclick="cambiarTab('mas')" id="tab-mas">
-        <span class="material-icons">menu</span>
-        <span>Más</span>
-      </button>
-    </nav>
-  </div>
-
-  <!-- ===================== MODAL: GUARDIA ===================== -->
-  <div id="modalGuardia" class="modal" aria-modal="true" role="dialog" tabindex="-1">
-    <div class="modal-content animate-modal">
-      <span class="modal-close" id="btnCerrarModal" title="Cerrar">&times;</span>
-      <div id="iconModal" style="font-size:40px;margin-bottom:10px">👤</div>
-      <h3 id="tituloModalGuardia">Nueva Guardia</h3>
-
-      <label for="tipoEvento">Tipo de evento</label>
-      <select id="tipoEvento">
-        <option value="guardia">Guardia</option>
-        <option value="recordatorio">Recordatorio</option>
-      </select>
-
-      <div id="seccionGuardia">
-        <label for="nombreGuardia">Colaborador</label>
-        <input type="text" id="nombreGuardia" list="colaboradores" autocomplete="off" placeholder="Nombre" />
-        <datalist id="colaboradores"></datalist>
-        <label for="turnoGuardia">Turno</label>
-        <select id="turnoGuardia">
-          <option value="am">☀️ AM · Mañana (8 – 14 h)</option>
-          <option value="pm">🌙 PM · Tarde (14 – 20 h)</option>
-        </select>
-      </div>
-
-      <div id="seccionRecordatorio" style="display:none">
-        <label for="tituloRecordatorio">Título</label>
-        <input type="text" id="tituloRecordatorio" placeholder="Ej. Llamar a proveedor" />
-        <label for="notaRecordatorio">Notas</label>
-        <textarea id="notaRecordatorio" rows="2" placeholder="Detalles..."></textarea>
-        <label for="horaRecordatorio">Hora</label>
-        <input type="time" id="horaRecordatorio" />
-      </div>
-
-      <input type="hidden" id="idGuardia" />
-      <button id="guardarGuardia" class="btn-primary">Guardar</button>
-      <button id="btnEliminarGuardia" class="btn-danger">Eliminar</button>
-      <button id="btnCancelar" class="btn-outline">Cancelar</button>
-    </div>
-  </div>
-
-  <!-- ===================== MODAL: DETALLE LEAD ===================== -->
-  <div id="modalLead" class="modal" aria-modal="true" role="dialog" tabindex="-1">
-    <div class="modal-content modal-lead-content animate-modal">
-      <span class="modal-close" id="btnCerrarModalLead" title="Cerrar">&times;</span>
-      <h3 id="lead-detail-title">Detalle del Lead</h3>
-
-      <!-- Info básica -->
-      <div class="lead-detail-info">
-        <div class="lead-detail-row"><span class="ldi-label">📅 Fecha</span><span id="ld-fecha"></span></div>
-        <div class="lead-detail-row"><span class="ldi-label">👤 Nombre</span><span id="ld-nombre"></span></div>
-        <div class="lead-detail-row"><span class="ldi-label">📱 Teléfono</span>
-          <a id="ld-tel-link" href="#" target="_blank" class="ld-wa-link">
-            <span id="ld-telefono"></span> <span class="material-icons" style="font-size:14px">open_in_new</span>
-          </a>
+        <div id="ev-sec-recordatorio" hidden>
+          <label class="field-label" for="ev-rec-titulo">Título</label>
+          <input type="text" id="ev-rec-titulo" placeholder="Ej. Llamar a proveedor" />
+          <label class="field-label" for="ev-rec-hora">Hora</label>
+          <input type="time" id="ev-rec-hora" />
+          <label class="field-label" for="ev-rec-nota">Notas</label>
+          <textarea id="ev-rec-nota" rows="2" placeholder="Detalles…"></textarea>
+          <button class="btn btn-ghost btn-block" id="ev-abrir-lead" hidden><span class="ms">person</span> Ver lead</button>
         </div>
-        <div class="lead-detail-row"><span class="ldi-label">🚗 Modelo</span><span id="ld-modelo"></span></div>
-        <div class="lead-detail-row"><span class="ldi-label">🔸 Versión</span><span id="ld-version"></span></div>
-        <div class="lead-detail-row"><span class="ldi-label">💰 Precio</span><span id="ld-precio"></span></div>
+
+        <div class="sheet-actions">
+          <button class="btn btn-danger-ghost" id="ev-eliminar" hidden><span class="ms">delete</span></button>
+          <button class="btn btn-primary btn-grow" id="ev-guardar">Guardar</button>
+        </div>
       </div>
-
-      <!-- Estado -->
-      <label class="ld-label-sm">Estado del lead</label>
-      <select id="ld-status" onchange="guardarEstadoLead()">
-        <option value="nuevo">🆕 Nuevo</option>
-        <option value="contactado">📞 Contactado</option>
-        <option value="seguimiento">🔄 Seguimiento</option>
-        <option value="cita">📅 Cita agendada</option>
-        <option value="vendido">✅ Vendido</option>
-        <option value="descartado">❌ Descartado</option>
-      </select>
-
-      <!-- Historial de notas -->
-      <label class="ld-label-sm">Historial de notas</label>
-      <div id="ld-notas-log" class="notas-log"></div>
-
-      <!-- Agregar nota -->
-      <div class="nota-add-row">
-        <textarea id="ld-nota-input" rows="2" placeholder="Escribe una nota de seguimiento..."></textarea>
-        <button class="btn-primary btn-nota-add" onclick="agregarNotaLead()">
-          <span class="material-icons">send</span>
-        </button>
-      </div>
-
-      <input type="hidden" id="ld-lead-id" />
-      <button class="btn-outline btn-wa-lead" onclick="abrirWaDesdeDetalle()">
-        💬 Abrir WhatsApp
-      </button>
     </div>
-  </div>
 
-  <!-- ===================== MODAL: EDITAR NOTA ===================== -->
-  <div id="modalEditarNota" class="modal" aria-modal="true" role="dialog" tabindex="-1">
-    <div class="modal-content animate-modal" style="max-width:380px">
-      <span class="modal-close" id="btnCerrarEditarNota" title="Cerrar">&times;</span>
-      <h3>Editar nota</h3>
-      <textarea id="edit-nota-texto" rows="4"
-        style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;font-size:15px"></textarea>
-      <input type="hidden" id="edit-nota-lead-id" />
-      <input type="hidden" id="edit-nota-index" />
-      <button class="btn-primary" onclick="confirmarEditarNota()">Guardar cambio</button>
-      <button class="btn-outline" onclick="cerrarModalEditarNota()">Cancelar</button>
-    </div>
-  </div>
-
-  <!-- ===================== MODAL: ROL DEL MES ===================== -->
-  <div id="modalRolMes" class="modal" aria-modal="true" role="dialog" tabindex="-1">
-    <div class="modal-content modal-rol-content animate-modal">
-      <span class="modal-close" id="btnCerrarRolMes" title="Cerrar">&times;</span>
-      <h3>📅 Cargar rol del mes</h3>
-
-      <!-- Selector mes / año -->
-      <div class="rol-mes-selectors">
-        <select id="rol-mes">
-          <option value="0">Enero</option>
-          <option value="1">Febrero</option>
-          <option value="2">Marzo</option>
-          <option value="3">Abril</option>
-          <option value="4">Mayo</option>
-          <option value="5">Junio</option>
-          <option value="6">Julio</option>
-          <option value="7">Agosto</option>
-          <option value="8">Septiembre</option>
-          <option value="9">Octubre</option>
-          <option value="10">Noviembre</option>
-          <option value="11">Diciembre</option>
-        </select>
-        <select id="rol-anio"></select>
+    <!-- ===================== HOJA: ROL DEL MES ===================== -->
+    <div class="sheet" id="sheet-rol" hidden>
+      <div class="sheet-panel">
+        <div class="sheet-grab"></div>
+        <div class="sheet-header">
+          <h3>Rol del mes</h3>
+          <button class="icon-btn" data-close><span class="ms">close</span></button>
+        </div>
+        <div class="field-row">
+          <select id="rol-mes"></select>
+          <select id="rol-anio"></select>
+        </div>
+        <p class="hint">
+          Toca cada día para cambiar: <span class="rol-chip am">☀️ AM</span> → <span class="rol-chip pm">🌙 PM</span> → sin guardia.
+          Las guardias que ya tienes en el mes aparecen marcadas.
+        </p>
+        <div id="rol-grid" class="rol-grid"></div>
+        <div class="sheet-actions">
+          <button class="btn btn-ghost" id="btn-rol-limpiar"><span class="ms">clear_all</span> Limpiar</button>
+          <button class="btn btn-primary btn-grow" id="btn-rol-guardar"><span class="ms">save</span> Guardar</button>
+        </div>
       </div>
-
-      <p class="rol-leyenda">
-        Toca cada día para asignar tu turno.<br />
-        <span class="rol-chip rol-chip-am">☀️ AM</span> Mañana 8–14 h &nbsp;
-        <span class="rol-chip rol-chip-pm">🌙 PM</span> Tarde 14–20 h &nbsp;
-        <span class="rol-chip rol-chip-none">—</span> Sin guardia
-      </p>
-
-      <!-- Grid de días -->
-      <div id="rol-grid" class="rol-grid"></div>
-
-      <!-- Acciones -->
-      <div class="rol-actions">
-        <button class="btn-outline" id="btn-rol-limpiar" onclick="limpiarRolGrid()">
-          <span class="material-icons" style="font-size:16px;vertical-align:middle">clear_all</span>
-          Limpiar
-        </button>
-        <button class="btn-primary btn-rol-guardar" id="btn-rol-guardar" onclick="guardarRolMes()">
-          <span class="material-icons" style="font-size:16px;vertical-align:middle">save</span>
-          Guardar en calendario
-        </button>
-      </div>
-      <p class="rol-nota" id="rol-nota-guardando" style="display:none">
-        ⏳ Guardando guardias en Firestore...
-      </p>
     </div>
-  </div>
 
-  <!-- JS (orden recomendado) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/locales-all.global.min.js"></script>
-  <script src="js/app.js"></script>
-</body>
+    <!-- ===================== HOJA: MI TARJETA ===================== -->
+    <div class="sheet" id="sheet-tarjeta" hidden>
+      <div class="sheet-panel tarjeta">
+        <div class="sheet-header">
+          <span></span>
+          <button class="icon-btn" data-close><span class="ms">close</span></button>
+        </div>
+        <img id="tj-foto" class="tj-foto" alt="" />
+        <h2 id="tj-nombre"></h2>
+        <p id="tj-puesto" class="tj-puesto"></p>
+        <div class="tj-qr" id="tj-qr" aria-label="Código QR con tu contacto"></div>
+        <p class="hint tj-hint">Escanea con la cámara para guardar mi contacto</p>
+        <button class="btn btn-wa btn-block" id="tj-wa"><span class="ms">chat</span> Enviar mis datos por WhatsApp</button>
+        <button class="btn btn-ghost btn-block" id="tj-vcf"><span class="ms">contact_page</span> Compartir contacto (.vcf)</button>
+        <div class="ld-quick tj-acciones">
+          <a class="btn btn-ghost" id="tj-tel"><span class="ms">call</span> Llamar</a>
+          <a class="btn btn-ghost" id="tj-mail"><span class="ms">mail</span> Correo</a>
+        </div>
+      </div>
+    </div>
 
+    <!-- ===================== HOJA: EDITAR FINANCIAMIENTO ===================== -->
+    <div class="sheet" id="sheet-fin" hidden>
+      <div class="sheet-panel">
+        <div class="sheet-grab"></div>
+        <div class="sheet-header">
+          <h3>Actualizar financiamiento</h3>
+          <button class="icon-btn" data-close><span class="ms">close</span></button>
+        </div>
+        <label class="field-label" for="fin-vig-input">Vigencia</label>
+        <input type="month" id="fin-vig-input" />
+        <label class="field-label" for="fin-oferta-input">Oferta comercial (link de Google Drive)</label>
+        <input type="url" id="fin-oferta-input" placeholder="https://drive.google.com/file/d/…/view" />
+        <label class="field-label" for="fin-descuentos-input">Bonos e incentivos (link de Google Drive)</label>
+        <input type="url" id="fin-descuentos-input" placeholder="https://drive.google.com/file/d/…/view" />
+        <div class="sheet-actions">
+          <button class="btn btn-primary btn-grow" id="btn-fin-guardar"><span class="ms">save</span> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.14/locales/es.global.min.js"></script>
+    <script src="js/vendor/qrcode.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+  </body>
 </html>

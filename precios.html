@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es" class="auth-pending">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Precios · HondaGo</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="img/icon-192.png" />
+    <script>
+      try {
+        var t = localStorage.getItem("hondago_tema") || (localStorage.getItem("modoOscuro") === "true" ? "oscuro" : "auto");
+        if (t !== "auto") document.documentElement.setAttribute("data-theme", t === "oscuro" ? "dark" : "light");
+      } catch (e) {}
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+
+  <body class="page-admin">
+    <div class="splash"><img src="img/icon-512.png" alt="HondaGo" /></div>
+
+    <section id="login" class="login" hidden>
+      <div class="login-card">
+        <img src="img/logo-honda.webp" alt="Honda" class="login-logo" />
+        <h1>Precios y versiones</h1>
+        <p>Inicia sesión con tu cuenta de Google para editar el catálogo.</p>
+        <button class="btn btn-primary btn-block" data-login><span class="ms">login</span> Entrar con Google</button>
+        <p class="login-error" data-login-error></p>
+      </div>
+    </section>
+
+    <div class="app">
+      <header class="app-header app-header-nav">
+        <a href="index.html" class="icon-btn" title="Volver a la app"><span class="ms">arrow_back</span></a>
+        <h1>Precios y versiones</h1>
+        <a href="gestion-hgo.html" class="icon-btn" title="Gestión"><span class="ms">admin_panel_settings</span></a>
+      </header>
+
+      <main class="main main-admin">
+        <div class="card banner-import" id="banner-import" hidden>
+          <span class="ms">cloud_upload</span>
+          <div>
+            <strong>Primero sube el catálogo a la nube</strong>
+            <p>Se copian los modelos, versiones 2026/2027, precios y fichas actuales. Solo se hace una vez.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-importar">Subir catálogo</button>
+        </div>
+
+        <div class="modelos-strip" id="p-modelos"></div>
+
+        <div id="p-editor" hidden>
+          <div class="card p-head">
+            <img id="p-img" alt="" />
+            <div>
+              <span class="eyebrow">Modelo</span>
+              <h2 id="p-nombre"></h2>
+            </div>
+          </div>
+
+          <div class="anio-tabs" id="p-anios"></div>
+
+          <div id="p-anio-panel">
+            <div class="card">
+              <div class="card-row">
+                <h3 id="p-anio-titulo"></h3>
+                <button class="btn btn-danger-ghost btn-sm" id="btn-del-anio"><span class="ms">delete</span> Eliminar año</button>
+              </div>
+              <label class="field-label">¿Se ve en la app?</label>
+              <div class="segmented segmented-block" id="p-estado">
+                <button data-estado="publicado"><span class="ms">visibility</span> Publicado</button>
+                <button data-estado="borrador"><span class="ms">edit_note</span> Borrador</button>
+                <button data-estado="oculto"><span class="ms">visibility_off</span> Oculto</button>
+              </div>
+              <p class="hint" id="p-estado-hint"></p>
+            </div>
+
+            <div class="card">
+              <h3>Versiones y precios</h3>
+              <div class="ver-table" id="p-versiones"></div>
+              <button class="btn btn-ghost btn-block" id="btn-add-ver"><span class="ms">add</span> Agregar versión</button>
+            </div>
+
+            <div class="card">
+              <h3>Fichas técnicas <small class="muted">(link de Google Drive)</small></h3>
+              <div id="p-fichas"></div>
+            </div>
+          </div>
+
+          <div class="empty" id="p-sin-anios" hidden>
+            <span class="ms">event_busy</span>
+            <p>Este modelo no tiene años. Toca <strong>+ Nuevo año</strong>.</p>
+          </div>
+        </div>
+      </main>
+
+      <div class="save-bar" id="save-bar" hidden>
+        <span><span class="ms">edit</span> Cambios sin guardar</span>
+        <button class="btn btn-ghost btn-sm" id="btn-descartar">Descartar</button>
+        <button class="btn btn-primary btn-sm" id="btn-guardar"><span class="ms">save</span> Guardar</button>
+      </div>
+    </div>
+
+    <!-- HOJA: NUEVO AÑO -->
+    <div class="sheet sheet-center" id="sheet-anio" hidden>
+      <div class="sheet-panel dialog">
+        <h3>Nuevo año-modelo</h3>
+        <label class="field-label" for="na-anio">Año</label>
+        <input type="number" id="na-anio" inputmode="numeric" min="2020" max="2100" />
+        <label class="field-label" for="na-base">Versiones iniciales</label>
+        <select id="na-base"></select>
+        <p class="hint">Se crea como <strong>Borrador</strong>: ajusta nombres y precios y publícalo cuando esté listo.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" data-close>Cancelar</button>
+          <button class="btn btn-primary" id="btn-na-crear">Crear</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/precios.js"></script>
+  </body>
+</html>

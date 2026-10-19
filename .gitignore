@@ -1,0 +1,10 @@
+# Respaldos de leads: contienen datos de clientes, NUNCA subir al repositorio público
+leads-hondago-*.json
+*.csv
+
+# Archivos de Windows
+desktop.ini
+Thumbs.db
+
+# Reglas de Firestore (se pegan en la consola de Firebase, no hace falta publicarlas)
+firestore*.rules
