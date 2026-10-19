@@ -260,6 +260,17 @@ async function borrarNota(i) {
   actualizarLead(ui.abierto, (l) => ({ notas: l.notas.filter((_, j) => j !== i) }));
 }
 
+async function eliminarLeadAbierto() {
+  const l = getLead(ui.abierto);
+  if (!l) return;
+  const quien = l.name || l.phoneRaw || "este lead";
+  if (!(await confirmar("¿Eliminar a " + quien + "?", "Se borra del teléfono y de la nube, junto con sus notas y su seguimiento.", { ok: "Eliminar", peligro: true }))) return;
+  if (l.seguimiento?.eventoId) eliminarEvento(l.seguimiento.eventoId);
+  cerrarHoja($("#sheet-lead"));
+  eliminarLeads([l.id]).catch(() => toast("No se pudo borrar de la nube", "error"));
+  toast("Lead eliminado", "success");
+}
+
 // ---------- Selección ----------
 function salirSeleccion() {
   ui.seleccionando = false;
@@ -443,6 +454,7 @@ export function iniciarLeads(opts = {}) {
     if (del) borrarNota(Number(del.dataset.notaDel));
   });
   $("#btn-nota-guardar").addEventListener("click", guardarNotaEditada);
+  $("#btn-lead-eliminar").addEventListener("click", eliminarLeadAbierto);
   $("#sheet-lead").addEventListener("sheet:close", () => (ui.abierto = ""));
 
   // Seguimiento

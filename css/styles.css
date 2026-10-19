@@ -1556,6 +1556,10 @@ input.invalid {
   padding-right: 6px;
 }
 
+.ld-eliminar {
+  margin-top: 22px;
+}
+
 /* Rol del mes */
 .rol-chip {
   display: inline-block;

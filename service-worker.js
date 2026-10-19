@@ -3,7 +3,7 @@
 // =====================================
 
 // ¡CAMBIA este nombre cada vez que publiques cambios! (dispara el aviso "Nueva versión")
-const CACHE_NAME = "HondaGo-v3-2026-10-19";
+const CACHE_NAME = "HondaGo-v3.1-2026-10-19";
 const CDN_CACHE = "HondaGo-cdn-v1";
 const DEV = ["localhost", "127.0.0.1"].includes(self.location.hostname) || /^192\.168\./.test(self.location.hostname);
 
